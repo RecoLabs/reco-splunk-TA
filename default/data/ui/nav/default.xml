@@ -1,0 +1,7 @@
+<nav search_view="search" color="#3c6188">
+<view name="inputs" default="true" />
+<view name="configuration"/>
+<view name="reco__posture"/>
+<view name="reco__alerts"/>
+<view name="search" label="Search"/>
+</nav>

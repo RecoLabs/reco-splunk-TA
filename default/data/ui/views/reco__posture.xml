@@ -1,0 +1,153 @@
+<form version="1.1" theme="dark">
+  <label>Reco : Posture Details</label>
+  <search id="base1">
+    <query>`reco-index` sourcetype=reco* source="reco_posture" 
+| table _time title, alert_type, status,score,extraction_sources,tags,risk_level,how_to_remediate,alert_description,last_scanned_time,policy_id,alert_id,instance_id 
+| stats latest(*) as * latest(_time) as _time by instance_id policy_id   
+| eval status=case(status==0,"UNSPECIFIED",status==1,"NEW",status==2,"IN_PROGRESS",status==3,"CLOSED",status==4,"PREVIEW",status==5,"TO_REVIEW",status==6,"PASSED",status==7,"RISK_ACCEPTED",status==8,"RISK_MITIGATED",status==9,"NA",status==11,"NA_NEW")
+| eval extraction_sources=replace(replace(extraction_sources,"\]","") ,"\[","") 
+| eval tags=replace(replace(tags,"\]","") ,"\[","") 
+</query>
+    <earliest>$field1.earliest$</earliest>
+    <latest>$field1.latest$</latest>
+  </search>
+  <search id="base" base="base1">
+    <query>| eval total_score = case(risk_level=="CRITICAL",40,risk_level=="HIGH",30,risk_level=="MEDIUM",20,risk_level=="LOW",10,1=1,0) 
+| stats sum(total_score) as total sum(score) as score | eval percentage = score*100/total</query>
+  </search>
+  <fieldset submitButton="false">
+    <input type="time" token="field1">
+      <label></label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="multiselect" token="risk_level">
+      <label>Risk Level</label>
+      <choice value="*">All</choice>
+      <prefix>(</prefix>
+      <suffix>)</suffix>
+      <initialValue>*</initialValue>
+      <valuePrefix>risk_level="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+      <fieldForLabel>risk_level</fieldForLabel>
+      <fieldForValue>risk_level</fieldForValue>
+      <search base="base1">
+        <query>| dedup risk_level</query>
+      </search>
+      <default>*</default>
+    </input>
+    <input type="multiselect" token="status">
+      <label>Status</label>
+      <choice value="*">All</choice>
+      <prefix>(</prefix>
+      <suffix>)</suffix>
+      <initialValue>*</initialValue>
+      <valuePrefix>status="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+      <fieldForLabel>status</fieldForLabel>
+      <fieldForValue>status</fieldForValue>
+      <search base="base1">
+        <query>| dedup status</query>
+      </search>
+      <default>*</default>
+    </input>
+    <input type="multiselect" token="extraction_sources">
+      <label>Extraction Sources</label>
+      <choice value="*">All</choice>
+      <prefix>(</prefix>
+      <suffix>)</suffix>
+      <initialValue>*</initialValue>
+      <valuePrefix>extraction_sources="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+      <fieldForLabel>extraction_sources</fieldForLabel>
+      <fieldForValue>extraction_sources</fieldForValue>
+      <search base="base1">
+        <query>| dedup extraction_sources</query>
+      </search>
+      <default>*</default>
+    </input>
+    <input type="multiselect" token="tags">
+      <label>Tags</label>
+      <choice value="*">All</choice>
+      <prefix>(</prefix>
+      <suffix>)</suffix>
+      <initialValue>*</initialValue>
+      <valuePrefix>tags="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+      <fieldForLabel>tags</fieldForLabel>
+      <fieldForValue>tags</fieldForValue>
+      <search base="base1">
+        <query>| dedup tags</query>
+      </search>
+      <default>*</default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <single>
+        <title>Total PTS</title>
+        <search base="base">
+          <query>| table total</query>
+        </search>
+        <option name="drilldown">none</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Current PTS</title>
+        <search base="base">
+          <query>| table score</query>
+        </search>
+        <option name="drilldown">none</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Current PTS (%)</title>
+        <search base="base">
+          <query>| table percentage</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="unit">%</option>
+        <option name="useThousandSeparators">0</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Posture Details</title>
+        <search base="base1">
+          <query>| search $status$ $extraction_sources$ $risk_level$ $tags$
+| table extraction_sources, title alert_description alert_type tags _time score risk_level status how_to_remediate last_scanned_time instance_id policy_id alert_id</query>
+        </search>
+        <option name="count">100</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <format type="color" field="risk_level">
+          <colorPalette type="sharedList"></colorPalette>
+          <scale type="sharedCategory"></scale>
+        </format>
+        <format type="color" field="status">
+          <colorPalette type="sharedList"></colorPalette>
+          <scale type="sharedCategory"></scale>
+        </format>
+        <drilldown>
+          <link target="_blank">/app/TA-reco/reco__posture__details?form.policy_id=$row.policy_id$&amp;form.instance_id=$row.instance_id$</link>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+</form>

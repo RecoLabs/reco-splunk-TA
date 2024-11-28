@@ -1,0 +1,44 @@
+<form version="1.1" theme="dark">
+  <label>Reco : Alert : History</label>
+  <fieldset submitButton="false">
+    <input type="text" token="id">
+      <label>Alert ID</label>
+      <default></default>
+    </input>
+    <input type="time" token="field1">
+      <label></label>
+      <default>
+        <earliest>0</earliest>
+        <latest></latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Alert History</title>
+      <table>
+        <search>
+          <query>`reco-index` source=reco_alerts id=$id$
+| spath path=policyViolations{}.jsonData.payload output=email_temp 
+| spath path=policyViolations{}.jsonData.payload{} output=email_temp1 
+| eval email_temp=coalesce(email_temp,email_temp1) 
+| rex field=email_temp "(?&lt;email&gt;[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+)" max_match=0 
+| rex field=email_temp "(?&lt;ip&gt;[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)" max_match=0 
+| table _time policyViolations{}.jsonData.policy_title description extractionSource id instanceId policyId riskLevel status policyViolations{}.jsonData.tenant_id policyViolations{}.jsonData.extraction_source_upper_case policyViolations{}.jsonData.extraction_source policyViolations{}.jsonData.policy_tags{} email ip
+| stats latest(*) as * by id _time 
+| rename "policyViolations{}.jsonData.policy_title" as policy_title "policyViolations{}.jsonData.tenant_id" as tenant_id "policyViolations{}.jsonData.extraction_source_upper_case" as extraction_source_upper_case "policyViolations{}.jsonData.extraction_source" as extraction_source policyViolations{}.jsonData.policy_tags{} as policy_tags 
+| table _time policy_title description extractionSource riskLevel status policy_tags email ip id instanceId policyId tenant_id * 
+| foreach * 
+    [ eval "&lt;&lt;FIELDS&gt;&gt;"=mvdedup('&lt;&lt;FIELD&gt;&gt;')] 
+| fields - "*FIELD*" | eval status=replace(status,"ALERT_STATUS_","")
+| rename extractionSource as extraction_sources, riskLevel as risk_level policy_tags as tags</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+  </row>
+</form>

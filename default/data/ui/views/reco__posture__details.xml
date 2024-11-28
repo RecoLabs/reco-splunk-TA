@@ -1,0 +1,36 @@
+<form version="1.1" theme="dark">
+  <label>Reco : Posture : History</label>
+  <fieldset submitButton="false">
+    <input type="text" token="policy_id">
+      <label>Policy ID</label>
+      <default></default>
+    </input>
+    <input type="text" token="instance_id">
+      <label>Instance ID</label>
+    </input>
+    <input type="time" token="field1">
+      <label></label>
+      <default>
+        <earliest>0</earliest>
+        <latest></latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Posture History</title>
+      <table>
+        <search>
+          <query>`reco-index` sourcetype=reco* source="reco_posture" policy_id=$policy_id$ instance_id=$instance_id$ TERM($policy_id$) TERM($instance_id$) 
+| table _time title, alert_type, status,score,extraction_sources,tags,risk_level,how_to_remediate,alert_description,last_scanned_time,policy_id,alert_id,instance_id 
+| sort  _time | dedup _time</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+  </row>
+</form>
