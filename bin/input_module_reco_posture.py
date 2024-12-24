@@ -20,6 +20,7 @@ def collect_events(helper, ew):
     source = helper.get_arg('source')  # Ensure 'source' is retrieved if applicable
     last_run = helper.get_check_point("last_run1") or {}
     global_tenant_url = helper.get_global_setting("tenant_url")
+    global_tenant_url = "https://"+global_tenant_url
     global_api_key = helper.get_global_setting("api_key")
     helper.log_info(f"Starting collection of events from Reco with max_fetch={max_fetch}, status={status}, source={source}")
 
