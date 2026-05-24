@@ -2,7 +2,7 @@
     "openapi": "3.0.0",
     "info": {
         "title": "TA-reco",
-        "version": "1.0.0",
+        "version": "1.0.3",
         "description": "Reco",
         "contact": {
             "name": "gal@reco.ai"
@@ -241,6 +241,254 @@
                             "5",
                             "6"
                         ]
+                    },
+                    "limit": {
+                        "type": "string"
+                    }
+                }
+            },
+            "reco_identities": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "interval": {
+                        "type": "string"
+                    },
+                    "index": {
+                        "type": "string"
+                    },
+                    "limit": {
+                        "type": "string"
+                    },
+                    "disabled": {
+                        "type": "string",
+                        "enum": [
+                            "False",
+                            "True"
+                        ]
+                    }
+                }
+            },
+            "reco_identities_without_name": {
+                "type": "object",
+                "properties": {
+                    "interval": {
+                        "type": "string"
+                    },
+                    "index": {
+                        "type": "string"
+                    },
+                    "limit": {
+                        "type": "string"
+                    },
+                    "disabled": {
+                        "type": "string",
+                        "enum": [
+                            "False",
+                            "True"
+                        ]
+                    }
+                }
+            },
+            "reco_identities_without_disabled": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "interval": {
+                        "type": "string"
+                    },
+                    "index": {
+                        "type": "string"
+                    },
+                    "limit": {
+                        "type": "string"
+                    }
+                }
+            },
+            "reco_discovery": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "interval": {
+                        "type": "string"
+                    },
+                    "index": {
+                        "type": "string"
+                    },
+                    "limit": {
+                        "type": "string"
+                    },
+                    "disabled": {
+                        "type": "string",
+                        "enum": [
+                            "False",
+                            "True"
+                        ]
+                    }
+                }
+            },
+            "reco_discovery_without_name": {
+                "type": "object",
+                "properties": {
+                    "interval": {
+                        "type": "string"
+                    },
+                    "index": {
+                        "type": "string"
+                    },
+                    "limit": {
+                        "type": "string"
+                    },
+                    "disabled": {
+                        "type": "string",
+                        "enum": [
+                            "False",
+                            "True"
+                        ]
+                    }
+                }
+            },
+            "reco_discovery_without_disabled": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "interval": {
+                        "type": "string"
+                    },
+                    "index": {
+                        "type": "string"
+                    },
+                    "limit": {
+                        "type": "string"
+                    }
+                }
+            },
+            "reco_system_logs": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "interval": {
+                        "type": "string"
+                    },
+                    "index": {
+                        "type": "string"
+                    },
+                    "limit": {
+                        "type": "string"
+                    },
+                    "disabled": {
+                        "type": "string",
+                        "enum": [
+                            "False",
+                            "True"
+                        ]
+                    }
+                }
+            },
+            "reco_system_logs_without_name": {
+                "type": "object",
+                "properties": {
+                    "interval": {
+                        "type": "string"
+                    },
+                    "index": {
+                        "type": "string"
+                    },
+                    "limit": {
+                        "type": "string"
+                    },
+                    "disabled": {
+                        "type": "string",
+                        "enum": [
+                            "False",
+                            "True"
+                        ]
+                    }
+                }
+            },
+            "reco_system_logs_without_disabled": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "interval": {
+                        "type": "string"
+                    },
+                    "index": {
+                        "type": "string"
+                    },
+                    "limit": {
+                        "type": "string"
+                    }
+                }
+            },
+            "reco_accounts": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "interval": {
+                        "type": "string"
+                    },
+                    "index": {
+                        "type": "string"
+                    },
+                    "limit": {
+                        "type": "string"
+                    },
+                    "disabled": {
+                        "type": "string",
+                        "enum": [
+                            "False",
+                            "True"
+                        ]
+                    }
+                }
+            },
+            "reco_accounts_without_name": {
+                "type": "object",
+                "properties": {
+                    "interval": {
+                        "type": "string"
+                    },
+                    "index": {
+                        "type": "string"
+                    },
+                    "limit": {
+                        "type": "string"
+                    },
+                    "disabled": {
+                        "type": "string",
+                        "enum": [
+                            "False",
+                            "True"
+                        ]
+                    }
+                }
+            },
+            "reco_accounts_without_disabled": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "interval": {
+                        "type": "string"
+                    },
+                    "index": {
+                        "type": "string"
                     },
                     "limit": {
                         "type": "string"
@@ -857,6 +1105,898 @@
                     }
                 },
                 "description": "Delete reco_posture item",
+                "deprecated": false
+            },
+            "parameters": [
+                {
+                    "name": "name",
+                    "in": "path",
+                    "required": true,
+                    "description": "The name of the item to operate on",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "output_mode",
+                    "in": "query",
+                    "required": true,
+                    "description": "Output mode",
+                    "schema": {
+                        "type": "string",
+                        "enum": [
+                            "json"
+                        ],
+                        "default": "json"
+                    }
+                }
+            ]
+        },
+        "/TA_reco_reco_identities": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Get list of items for reco_identities",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/reco_identities_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Get list of items for reco_identities",
+                "deprecated": false
+            },
+            "post": {
+                "responses": {
+                    "200": {
+                        "description": "Create item in reco_identities",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/reco_identities_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Create item in reco_identities",
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/reco_identities_without_disabled"
+                            }
+                        }
+                    },
+                    "required": false
+                },
+                "deprecated": false
+            },
+            "parameters": [
+                {
+                    "name": "output_mode",
+                    "in": "query",
+                    "required": true,
+                    "description": "Output mode",
+                    "schema": {
+                        "type": "string",
+                        "enum": [
+                            "json"
+                        ],
+                        "default": "json"
+                    }
+                }
+            ]
+        },
+        "/TA_reco_reco_identities/{name}": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Get reco_identities item details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/reco_identities_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Get reco_identities item details",
+                "deprecated": false
+            },
+            "post": {
+                "responses": {
+                    "200": {
+                        "description": "Update reco_identities item",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/reco_identities_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Update reco_identities item",
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/reco_identities_without_name"
+                            }
+                        }
+                    },
+                    "required": false
+                },
+                "deprecated": false
+            },
+            "delete": {
+                "responses": {
+                    "200": {
+                        "description": "Delete reco_identities item",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/reco_identities_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Delete reco_identities item",
+                "deprecated": false
+            },
+            "parameters": [
+                {
+                    "name": "name",
+                    "in": "path",
+                    "required": true,
+                    "description": "The name of the item to operate on",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "output_mode",
+                    "in": "query",
+                    "required": true,
+                    "description": "Output mode",
+                    "schema": {
+                        "type": "string",
+                        "enum": [
+                            "json"
+                        ],
+                        "default": "json"
+                    }
+                }
+            ]
+        },
+        "/TA_reco_reco_discovery": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Get list of items for reco_discovery",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/reco_discovery_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Get list of items for reco_discovery",
+                "deprecated": false
+            },
+            "post": {
+                "responses": {
+                    "200": {
+                        "description": "Create item in reco_discovery",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/reco_discovery_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Create item in reco_discovery",
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/reco_discovery_without_disabled"
+                            }
+                        }
+                    },
+                    "required": false
+                },
+                "deprecated": false
+            },
+            "parameters": [
+                {
+                    "name": "output_mode",
+                    "in": "query",
+                    "required": true,
+                    "description": "Output mode",
+                    "schema": {
+                        "type": "string",
+                        "enum": [
+                            "json"
+                        ],
+                        "default": "json"
+                    }
+                }
+            ]
+        },
+        "/TA_reco_reco_discovery/{name}": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Get reco_discovery item details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/reco_discovery_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Get reco_discovery item details",
+                "deprecated": false
+            },
+            "post": {
+                "responses": {
+                    "200": {
+                        "description": "Update reco_discovery item",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/reco_discovery_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Update reco_discovery item",
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/reco_discovery_without_name"
+                            }
+                        }
+                    },
+                    "required": false
+                },
+                "deprecated": false
+            },
+            "delete": {
+                "responses": {
+                    "200": {
+                        "description": "Delete reco_discovery item",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/reco_discovery_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Delete reco_discovery item",
+                "deprecated": false
+            },
+            "parameters": [
+                {
+                    "name": "name",
+                    "in": "path",
+                    "required": true,
+                    "description": "The name of the item to operate on",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "output_mode",
+                    "in": "query",
+                    "required": true,
+                    "description": "Output mode",
+                    "schema": {
+                        "type": "string",
+                        "enum": [
+                            "json"
+                        ],
+                        "default": "json"
+                    }
+                }
+            ]
+        },
+        "/TA_reco_reco_system_logs": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Get list of items for reco_system_logs",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/reco_system_logs_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Get list of items for reco_system_logs",
+                "deprecated": false
+            },
+            "post": {
+                "responses": {
+                    "200": {
+                        "description": "Create item in reco_system_logs",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/reco_system_logs_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Create item in reco_system_logs",
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/reco_system_logs_without_disabled"
+                            }
+                        }
+                    },
+                    "required": false
+                },
+                "deprecated": false
+            },
+            "parameters": [
+                {
+                    "name": "output_mode",
+                    "in": "query",
+                    "required": true,
+                    "description": "Output mode",
+                    "schema": {
+                        "type": "string",
+                        "enum": [
+                            "json"
+                        ],
+                        "default": "json"
+                    }
+                }
+            ]
+        },
+        "/TA_reco_reco_system_logs/{name}": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Get reco_system_logs item details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/reco_system_logs_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Get reco_system_logs item details",
+                "deprecated": false
+            },
+            "post": {
+                "responses": {
+                    "200": {
+                        "description": "Update reco_system_logs item",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/reco_system_logs_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Update reco_system_logs item",
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/reco_system_logs_without_name"
+                            }
+                        }
+                    },
+                    "required": false
+                },
+                "deprecated": false
+            },
+            "delete": {
+                "responses": {
+                    "200": {
+                        "description": "Delete reco_system_logs item",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/reco_system_logs_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Delete reco_system_logs item",
+                "deprecated": false
+            },
+            "parameters": [
+                {
+                    "name": "name",
+                    "in": "path",
+                    "required": true,
+                    "description": "The name of the item to operate on",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "output_mode",
+                    "in": "query",
+                    "required": true,
+                    "description": "Output mode",
+                    "schema": {
+                        "type": "string",
+                        "enum": [
+                            "json"
+                        ],
+                        "default": "json"
+                    }
+                }
+            ]
+        },
+        "/TA_reco_reco_accounts": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Get list of items for reco_accounts",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/reco_accounts_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Get list of items for reco_accounts",
+                "deprecated": false
+            },
+            "post": {
+                "responses": {
+                    "200": {
+                        "description": "Create item in reco_accounts",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/reco_accounts_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Create item in reco_accounts",
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/reco_accounts_without_disabled"
+                            }
+                        }
+                    },
+                    "required": false
+                },
+                "deprecated": false
+            },
+            "parameters": [
+                {
+                    "name": "output_mode",
+                    "in": "query",
+                    "required": true,
+                    "description": "Output mode",
+                    "schema": {
+                        "type": "string",
+                        "enum": [
+                            "json"
+                        ],
+                        "default": "json"
+                    }
+                }
+            ]
+        },
+        "/TA_reco_reco_accounts/{name}": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Get reco_accounts item details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/reco_accounts_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Get reco_accounts item details",
+                "deprecated": false
+            },
+            "post": {
+                "responses": {
+                    "200": {
+                        "description": "Update reco_accounts item",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/reco_accounts_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Update reco_accounts item",
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/reco_accounts_without_name"
+                            }
+                        }
+                    },
+                    "required": false
+                },
+                "deprecated": false
+            },
+            "delete": {
+                "responses": {
+                    "200": {
+                        "description": "Delete reco_accounts item",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/reco_accounts_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Delete reco_accounts item",
                 "deprecated": false
             },
             "parameters": [

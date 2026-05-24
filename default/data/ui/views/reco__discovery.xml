@@ -1,0 +1,155 @@
+<form version="1.1" theme="dark">
+  <label>Reco : Discovery</label>
+  <search id="main">
+    <query>`reco-index` source=reco_discovery sourcetype=recoDiscovery [| tstats latest(_time) as latest where  `reco-index` source=reco_discovery sourcetype=recoDiscovery  earliest=-15d latest=now| eval earliest=latest-3600 | eval latest=latest+10| table earliest latest] | rex field=authorization_status "AUTH_STATUS_(?&lt;Authorization&gt;.*)" | spath path=application_name
+| stats  values(application_instances_names{}) as Instance latest(category) as Category values(type_usage) as Usage  values(auth_types{}) as "Auth Type" latest(security_score) as "Vendor Rank" latest(sso_not_enabled) as sso_not_enabled latest(is_using_ai) as is_using_ai latest(first_use_time) as "first_use_time"   latest(last_refresh) as "Last Seen" latest(Authorization) as Authorization latest(application_name) as application_name latest(unused_app) as unused_app  latest(shadow_app) as shadow_app by  genric_app_id</query>
+   
+    <sampleRatio>1</sampleRatio>
+  </search>
+  <fieldset submitButton="false">
+    <!--<input type="time" token="time_token">-->
+    <!--  <label></label>-->
+    <!--  <default>-->
+    <!--    <earliest>0</earliest>-->
+    <!--    <latest></latest>-->
+    <!--  </default>-->
+    <!--</input>-->
+    <input type="dropdown" token="name" searchWhenChanged="true">
+      <label>App Name</label>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <initialValue>*</initialValue>
+      <fieldForLabel>application_name</fieldForLabel>
+      <fieldForValue>application_name</fieldForValue>
+      <search base="main">
+        <query>| stats count by application_name</query>
+      </search>
+    </input>
+    <input type="dropdown" token="instance" searchWhenChanged="true">
+      <label>Instance</label>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <initialValue>*</initialValue>
+      <fieldForLabel>Instance</fieldForLabel>
+      <fieldForValue>Instance</fieldForValue>
+      <search base="main">
+        <query>| stats count by Instance</query>
+      </search>
+    </input>
+  </fieldset>
+  <row>
+     <panel depends="$alwaysHideCSS$">
+  <html>
+    <style>
+      #totalapps{
+        width:10% !important;
+      }
+      #insights{
+        width:40% !important;
+      }
+      #Authorization{
+        width:50% !important;
+      }
+    </style>
+  </html>
+</panel>
+  </row>
+  <row>
+   
+    <panel id="totalapps">
+      <single>
+        <title>Total Apps</title>
+        <search base="main">
+          <query>| stats count</query>
+        </search>
+        <option name="drilldown">none</option>
+      </single>
+    </panel>
+    <panel  id="insights">
+      <title>Insights</title>
+      <single>
+        <title>Shadow Business Apps</title>
+        <search base="main">
+          <query>| search shadow_app="true" | stats count</query>
+        </search>
+        <option name="drilldown">none</option>
+      
+      </single>
+      <single>
+        <title>UNUSED</title>
+        <search base="main">
+          <query>| search unused_app="true" | stats count</query>
+        </search>
+        <option name="drilldown">none</option>
+      </single>
+      <single>
+        <title>NEW</title>
+        <search base="main">
+          <query>| eval first_epoch_time=strptime(first_use_time, "%Y-%m-%dT%H:%M:%SZ") 
+| where first_epoch_time&gt;relative_time(now(),"-30d") | stats count</query>
+        </search>
+        <option name="drilldown">none</option>
+      </single>
+      <single>
+        <title>SSO NOT ENABLED</title>
+        <search base="main">
+          <query>| search sso_not_enabled="true" | stats count</query>
+        </search>
+        <option name="drilldown">none</option>
+      </single>
+    </panel>
+    <panel  id="Authorization">
+      <title>Authorization</title>
+      <single>
+        <title>UNSANCTIONED</title>
+        <search base="main">
+          <query>| search Authorization="UNSANCTIONED" | stats count</query>
+        </search>
+        <option name="drilldown">none</option>
+      </single>
+      <single>
+        <title>SANCTIONED</title>
+        <search base="main">
+          <query>| search Authorization="SANCTIONED"| stats count</query>
+        </search>
+        <option name="drilldown">none</option>
+      </single>
+      <single>
+        <title>T0 REVIEW</title>
+        <search base="main">
+          <query>| search Authorization="TO_REVIEW" | stats count</query>
+        </search>
+        <option name="drilldown">none</option>
+      </single>
+      <single>
+        <title>RISK ACCEPTED</title>
+        <search base="main">
+          <query>| search Authorization="RISK_ACCEPTED" | stats count</query>
+        </search>
+        <option name="drilldown">none</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Discovery Information</title>
+      <table>
+        <search base="main">
+          <query>| search application_name=$name|s$ AND Instance=$instance|s$
+| rename application_name as "App Name" 
+| eval Analysis=if(is_using_ai="true","Embedded AI",Analysis) 
+| eval Analysis=if(sso_not_enabled="true",mvappend(Analysis,"SSO NOT ENABLED"),Analysis) 
+| table "App Name" Instance Category Usage "Auth Type" Account "Vendor Rank" "Last Seen" Analysis Authorization</query>
+        </search>
+        <option name="count">100</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+</form>
