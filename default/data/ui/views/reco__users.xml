@@ -1,0 +1,134 @@
+<form version="1.1" theme="dark">
+  <label>Reco : Users</label>
+  <search id="main_search">
+    <query>`reco-index`  source=reco_identities  sourcetype=recoIdentities [| tstats latest(_time) as latest where   `reco-index`  source=reco_identities  sourcetype=recoIdentities earliest=-15d latest=now| eval earliest=latest-3600 | eval latest=latest+10 | table earliest latest]
+| rex field=admin_instance_types{} "INSTANCE_SOURCE_(?&lt;Admin&gt;.*)" | rename  label_names{} as Analysis
+| mvexpand Analysis | eval Analysis=if(match(Analysis,"Admin*"),"",Analysis) 
+| stats latest(departments{}) as Department values(Analysis) as Analysis values(Admin) as Admin  latest(num_accounts) as Accounts  latest(alerts_count) as "Open Alerts" latest(last_seen_time) as last_seen_time latest(is_former) as is_former latest(has_access) as has_access by full_name primary_email_address
+          </query>
+    <sampleRatio>1</sampleRatio>
+  </search>
+  <fieldset submitButton="false">
+    <!--<input type="time" token="time_token">-->
+    <!--  <label>Time Range</label>-->
+    <!--  <default>-->
+    <!--    <earliest>0</earliest>-->
+    <!--    <latest></latest>-->
+    <!--  </default>-->
+    <!--</input>-->
+    <input type="dropdown" token="name" searchWhenChanged="true">
+      <label>Name</label>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <initialValue>*</initialValue>
+      <fieldForLabel>full_name</fieldForLabel>
+      <fieldForValue>full_name</fieldForValue>
+      <search base="main_search">
+        <query>| stats count by full_name</query>
+      </search>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <single>
+        <title>Total Users</title>
+        <search base="main_search">
+          <query>| stats count(full_name)</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Current</title>
+        <search base="main_search">
+          <query>| where is_former="false" | stats count</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </single>
+      <single>
+        <title>Formar</title>
+        <search base="main_search">
+          <query>| where is_former="true" | stats count</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <single>
+        <title>Formar with Access</title>
+        <search base="main_search">
+          <query>| where Analysis="Former Org User" AND has_access="true" | stats count</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </single>
+      <single>
+        <title>RISKY</title>
+        <search base="main_search">
+          <query>| where Analysis="Risky Org User" | stats count</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </single>
+      <single>
+        <title>ADMIN</title>
+        <search base="main_search">
+          <query>| where isnotnull(Admin) | stats count</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </single>
+      <single>
+        <title>VIP</title>
+        <search base="main_search">
+          <query>| where Analysis="VIP User" | stats count</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </single>
+      <single>
+        <title>LEAVING</title>
+        <search base="main_search">
+          <query>| where Analysis="Leaving Org User" | stats count</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </single>
+      <single>
+        <title>NEW</title>
+        <search base="main_search">
+          <query>| where Analysis="New Org User" | stats count</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Users Information</title>
+        <search base="main_search">
+          <query>| replace null WITH NA IN last_seen_time
+| search full_name=$name|s$
+| rename full_name as Name, last_seen_time as "Last Seen"
+| table Name Department Analysis Admin Accounts "Open Alerts" "Last Seen"</query>
+        </search>
+        <option name="count">100</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+</form>
