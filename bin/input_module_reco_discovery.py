@@ -20,11 +20,12 @@ def collect_events(helper, ew):
     machinery here was dead code (an unreachable `if after:` branch), so this
     was always a full re-pull every run. That external behavior is preserved.
     """
+    helper.log_info("=== Starting reco_discovery collection job ===")
     page_size = int(helper.get_arg('limit') or DEFAULT_PAGE_SIZE)
-    tenant_url = "https://" + helper.get_global_setting("tenant_url")
-    api_key = helper.get_global_setting("api_key")
 
-    helper.log_info(f"Starting collection of app discovery data with page_size={page_size}")
+    tenant_url, api_key = reco_api.get_tenant_config(helper)
+    if not tenant_url:
+        return
 
     all_apps = []
     try:
@@ -32,7 +33,8 @@ def collect_events(helper, ew):
         helper.log_info(f"Total apps fetched: {len(all_apps)}")
         send_events(all_apps, helper, ew)
     except Exception as e:
-        helper.log_error(f"Error fetching app discovery data: {e}")
+        reco_api.log_exception(helper, "Error fetching app discovery data", e)
+    helper.log_info("=== Finished reco_discovery collection job ===")
 
 
 def fetch_all_apps(helper, tenant_url, api_key, page_size):

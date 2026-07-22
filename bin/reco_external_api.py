@@ -7,6 +7,7 @@ GET instead of a base64-cell table response, and pagination is a single
 `totalResults`/`itemsPerPage` envelope instead of a separate /count call.
 """
 import datetime
+import traceback
 
 EXTERNAL_API_BASE = "/api/v1/external-api"
 OCCURRED_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
@@ -22,6 +23,54 @@ def build_headers(api_key):
         "Authorization": f"Bearer {api_key}",
         "User-Agent": f"splunk-ta/{TA_VERSION}",
     }
+
+
+def get_tenant_config(helper):
+    """Read and validate the add-on's global tenant_url/api_key settings.
+
+    Returns (tenant_url, api_key) with the scheme prepended, or (None, None)
+    if either is missing -- in which case a specific, actionable error has
+    already been logged, so callers should just return early.
+    """
+    raw_tenant_url = helper.get_global_setting("tenant_url")
+    api_key = helper.get_global_setting("api_key")
+    if not raw_tenant_url:
+        helper.log_error(
+            "Reco tenant URL is not configured. Set it on the add-on's "
+            "Configuration page (enter just the hostname, e.g. "
+            "'your-tenant.us.reco.ai' -- no 'https://' prefix, no trailing slash)."
+        )
+        return None, None
+    if not api_key:
+        helper.log_error(
+            "Reco API key is not configured. Set it on the add-on's Configuration page."
+        )
+        return None, None
+    return "https://" + raw_tenant_url, api_key
+
+
+def classify_http_error(status_code):
+    """Return a short, actionable hint for a non-200 HTTP status."""
+    if status_code in (401, 403):
+        return "check that the configured API key is valid and has permission for this resource"
+    if status_code == 404:
+        return "resource not found -- check the configured tenant URL is correct"
+    if status_code == 429:
+        return "rate limited by the Reco API -- this should resolve on the next poll cycle"
+    if status_code >= 500:
+        return "Reco API server error -- may be transient, check again on the next poll cycle"
+    return "unexpected HTTP status from the Reco API"
+
+
+def log_exception(helper, context_msg, exc):
+    """Log an exception with its full traceback, not just str(exc).
+
+    helper.log_error only accepts a plain string (no exc_info kwarg), so the
+    traceback has to be formatted into the message directly or it's lost --
+    leaving only a bare message like "'<' not supported between instances of
+    'str' and 'int'" with no indication of where it happened.
+    """
+    helper.log_error(f"{context_msg}: {exc}\n{traceback.format_exc()}")
 
 
 def fetch_all(helper, tenant_url, api_key, resource_path, items_key, page_size=1000,
@@ -42,6 +91,11 @@ def fetch_all(helper, tenant_url, api_key, resource_path, items_key, page_size=1
     headers = build_headers(api_key)
     url = f"{tenant_url}{EXTERNAL_API_BASE}/{resource_path}"
 
+    helper.log_info(
+        f"Requesting {resource_path}: filters={filters or '(none -- full pull)'}, "
+        f"sort_by={sort_by or '(none)'}, sort_order={sort_order or '(none)'}, page_size={page_size}"
+    )
+
     items = []
     start_index = 1
     page_number = 0
@@ -57,8 +111,12 @@ def fetch_all(helper, tenant_url, api_key, resource_path, items_key, page_size=1
         response = helper.send_http_request(url=url, method="GET", parameters=params,
                                               headers=headers, timeout=timeout)
         if response.status_code != 200:
-            raise ValueError(f"Failed to retrieve {resource_path}, status code: {response.status_code}, "
-                              f"body: {response.text}")
+            hint = classify_http_error(response.status_code)
+            helper.log_error(
+                f"Request to {resource_path} failed: status={response.status_code}, "
+                f"hint: {hint}, body={response.text}"
+            )
+            raise ValueError(f"Failed to retrieve {resource_path}, status code: {response.status_code}")
 
         body = response.json()
         page_items = body.get(items_key) or []
@@ -73,6 +131,10 @@ def fetch_all(helper, tenant_url, api_key, resource_path, items_key, page_size=1
         items.extend(page_items)
 
         items_per_page = int(body.get("itemsPerPage", len(page_items)))
+        helper.log_info(
+            f"{resource_path}: page {page_number} fetched {len(page_items)} items "
+            f"(cumulative {len(items)}/{total_results})"
+        )
         if not page_items or items_per_page < page_size or len(items) >= total_results:
             break
         start_index += page_size
@@ -87,6 +149,11 @@ def get_detail(helper, tenant_url, api_key, resource_path, item_key, timeout=30)
     url = f"{tenant_url}{EXTERNAL_API_BASE}/{resource_path}"
     response = helper.send_http_request(url=url, method="GET", headers=headers, timeout=timeout)
     if response.status_code != 200:
+        hint = classify_http_error(response.status_code)
+        helper.log_error(
+            f"Request to {resource_path} failed: status={response.status_code}, "
+            f"hint: {hint}, body={response.text}"
+        )
         return None
     return response.json().get(item_key, {})
 
@@ -97,3 +164,18 @@ def format_checkpoint_time(dt):
 
 def parse_checkpoint_time(value):
     return datetime.datetime.strptime(value, OCCURRED_FORMAT) if value else None
+
+
+def log_checkpoint_state(helper, after, field_name):
+    """Log whether this run is resuming from a checkpoint or doing a full pull."""
+    if after:
+        helper.log_info(f"Resuming from checkpoint: {field_name} > {format_checkpoint_time(after)}")
+    else:
+        helper.log_info(f"No checkpoint found -- performing a full pull on {field_name}")
+
+
+def save_checkpoint(helper, checkpoint_name, now):
+    """Save the checkpoint and log the new value."""
+    new_value = format_checkpoint_time(now)
+    helper.save_check_point(checkpoint_name, {"lastRun": new_value})
+    helper.log_info(f"Checkpoint '{checkpoint_name}' updated to {new_value}")

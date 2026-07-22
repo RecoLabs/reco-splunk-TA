@@ -22,16 +22,17 @@ def validate_input(helper, definition):
 
 def collect_events(helper, ew):
     """Fetch posture issues from Reco's External API and send them to Splunk."""
+    helper.log_info("=== Starting reco_posture collection job ===")
     max_fetch = helper.get_arg('limit')
     status = None  # helper.get_arg('status') -- unused since 1.x, kept disabled
     last_run = helper.get_check_point("last_run1") or {}
-    tenant_url = "https://" + helper.get_global_setting("tenant_url")
-    api_key = helper.get_global_setting("api_key")
-    helper.log_info(f"Starting collection of posture issues from Reco with max_fetch={max_fetch}, status={status}")
+
+    tenant_url, api_key = reco_api.get_tenant_config(helper)
+    if not tenant_url:
+        return
 
     after = reco_api.parse_checkpoint_time(last_run.get("lastRun"))
-    if after:
-        helper.log_info(f"Last run time: {after}")
+    reco_api.log_checkpoint_state(helper, after, STATUS_SINCE_FIELD)
 
     issues = []
     try:
@@ -39,10 +40,10 @@ def collect_events(helper, ew):
         helper.log_info(f"Fetched {len(issues)} posture issues.")
         send_events(issues, helper, ew)
     except Exception as e:
-        helper.log_error(f"Error fetching posture issues: {e}")
+        reco_api.log_exception(helper, "Error fetching posture issues", e)
 
-    helper.save_check_point("last_run1", {"lastRun": reco_api.format_checkpoint_time(datetime.now())})
-    helper.log_info("Checkpoint updated with last run time")
+    reco_api.save_checkpoint(helper, "last_run1", datetime.now())
+    helper.log_info("=== Finished reco_posture collection job ===")
 
 
 def fetch_posture_issues(helper, tenant_url, api_key, max_fetch, status, after):

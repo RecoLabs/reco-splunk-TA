@@ -20,11 +20,12 @@ def collect_events(helper, ew):
     machinery here was dead code (an unreachable `if after:` branch), so this
     was always a full re-pull every run. That external behavior is preserved.
     """
+    helper.log_info("=== Starting reco_accounts collection job ===")
     page_size = int(helper.get_arg('limit') or DEFAULT_PAGE_SIZE)
-    tenant_url = "https://" + helper.get_global_setting("tenant_url")
-    api_key = helper.get_global_setting("api_key")
 
-    helper.log_info(f"Starting collection of accounts with page_size={page_size}")
+    tenant_url, api_key = reco_api.get_tenant_config(helper)
+    if not tenant_url:
+        return
 
     all_accounts = []
     try:
@@ -32,7 +33,8 @@ def collect_events(helper, ew):
         helper.log_info(f"Total accounts fetched: {len(all_accounts)}")
         send_events(all_accounts, helper, ew)
     except Exception as e:
-        helper.log_error(f"Error fetching accounts: {e}")
+        reco_api.log_exception(helper, "Error fetching accounts", e)
+    helper.log_info("=== Finished reco_accounts collection job ===")
 
 
 def fetch_all_accounts(helper, tenant_url, api_key, page_size):

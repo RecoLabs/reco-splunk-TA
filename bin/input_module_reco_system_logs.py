@@ -17,16 +17,16 @@ def validate_input(helper, definition):
 
 def collect_events(helper, ew):
     """Fetch system/audit logs from Reco's External API and send to Splunk."""
+    helper.log_info("=== Starting reco_system_logs collection job ===")
     page_size = int(helper.get_arg('limit') or DEFAULT_PAGE_SIZE)
     last_run = helper.get_check_point("reco_system_logs_last_run") or {}
-    tenant_url = "https://" + helper.get_global_setting("tenant_url")
-    api_key = helper.get_global_setting("api_key")
 
-    helper.log_info(f"Starting collection of system logs events with page_size={page_size}")
+    tenant_url, api_key = reco_api.get_tenant_config(helper)
+    if not tenant_url:
+        return
 
     after = reco_api.parse_checkpoint_time(last_run.get("lastRun"))
-    if after:
-        helper.log_info(f"Last run time: {after}")
+    reco_api.log_checkpoint_state(helper, after, TIMESTAMP_FIELD)
 
     all_logs = []
     try:
@@ -34,11 +34,13 @@ def collect_events(helper, ew):
         helper.log_info(f"Total system logs fetched: {len(all_logs)}")
         send_events(all_logs, helper, ew)
     except Exception as e:
-        helper.log_error(f"Error fetching system logs data: {e}")
+        reco_api.log_exception(helper, "Error fetching system logs data", e)
 
     if all_logs:
-        helper.save_check_point("reco_system_logs_last_run", {"lastRun": reco_api.format_checkpoint_time(datetime.now())})
-        helper.log_info("Checkpoint updated with last run time")
+        reco_api.save_checkpoint(helper, "reco_system_logs_last_run", datetime.now())
+    else:
+        helper.log_info("No system logs fetched this run -- checkpoint left unchanged")
+    helper.log_info("=== Finished reco_system_logs collection job ===")
 
 
 def fetch_all_system_logs(helper, tenant_url, api_key, page_size, after):

@@ -16,17 +16,17 @@ def validate_input(helper, definition):
 
 def collect_events(helper, ew):
     """Fetch alerts from Reco's External API and send them to Splunk."""
+    helper.log_info("=== Starting reco_alerts collection job ===")
     max_fetch = helper.get_arg('limit')
     status = None  # helper.get_arg('alert_status') -- unused since 1.x, kept disabled
     last_run = helper.get_check_point("last_run") or {}
-    tenant_url = "https://" + helper.get_global_setting("tenant_url")
-    api_key = helper.get_global_setting("api_key")
 
-    helper.log_info(f"Starting collection of alerts from Reco with max_fetch={max_fetch}, status={status}")
+    tenant_url, api_key = reco_api.get_tenant_config(helper)
+    if not tenant_url:
+        return
 
     after = reco_api.parse_checkpoint_time(last_run.get("lastRun"))
-    if after:
-        helper.log_info(f"Last run time: {after}")
+    reco_api.log_checkpoint_state(helper, after, CREATED_AT_FIELD)
 
     alerts = []
     try:
@@ -34,11 +34,13 @@ def collect_events(helper, ew):
         helper.log_info(f"Fetched {len(alerts)} alerts.")
         send_events(alerts, helper, ew)
     except Exception as e:
-        helper.log_error(f"Error fetching alerts: {e}")
+        reco_api.log_exception(helper, "Error fetching alerts", e)
 
     if alerts:
-        helper.save_check_point("last_run", {"lastRun": reco_api.format_checkpoint_time(datetime.now())})
-        helper.log_info("Checkpoint updated with last run time")
+        reco_api.save_checkpoint(helper, "last_run", datetime.now())
+    else:
+        helper.log_info("No alerts fetched this run -- checkpoint left unchanged")
+    helper.log_info("=== Finished reco_alerts collection job ===")
 
 
 def fetch_reco_alerts(helper, tenant_url, api_key, max_fetch, status, after):
