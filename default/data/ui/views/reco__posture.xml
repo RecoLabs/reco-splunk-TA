@@ -145,7 +145,7 @@
           <scale type="sharedCategory"></scale>
         </format>
         <drilldown>
-          <link target="_blank">/app/reco-splunk-TA/reco__posture__details?form.policy_id=$row.policy_id$&amp;form.instance_id=$row.instance_id$</link>
+          <link target="_blank">/app/TA-reco/reco__posture__details?form.policy_id=$row.policy_id$&amp;form.instance_id=$row.instance_id$</link>
         </drilldown>
       </table>
     </panel>

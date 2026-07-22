@@ -1,7 +1,7 @@
 {
     "openapi": "3.0.0",
     "info": {
-        "title": "reco-splunk-TA",
+        "title": "TA-reco",
         "version": "1.0.3",
         "description": "Reco",
         "contact": {
@@ -10,7 +10,7 @@
     },
     "servers": [
         {
-            "url": "https://{domain}:{port}/servicesNS/-/reco-splunk-TA",
+            "url": "https://{domain}:{port}/servicesNS/-/TA-reco",
             "variables": {
                 "domain": {
                     "default": "localhost"

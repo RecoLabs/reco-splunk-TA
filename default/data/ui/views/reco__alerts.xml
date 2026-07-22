@@ -122,7 +122,7 @@
           <scale type="sharedCategory"></scale>
         </format>
         <drilldown>
-          <link target="_blank">/app/reco-splunk-TA/reco__alert__history?form.id=$row.id$</link>
+          <link target="_blank">/app/TA-reco/reco__alert__history?form.id=$row.id$</link>
         </drilldown>
       </table>
     </panel>
