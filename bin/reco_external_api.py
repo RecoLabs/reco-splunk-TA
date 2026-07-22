@@ -62,12 +62,17 @@ def fetch_all(helper, tenant_url, api_key, resource_path, items_key, page_size=1
 
         body = response.json()
         page_items = body.get(items_key) or []
-        total_results = body.get("totalResults", len(items) + len(page_items))
+        # int64 proto fields (totalResults, itemsPerPage) are serialized as
+        # JSON strings (e.g. "3"), not numbers -- protobuf's canonical JSON
+        # mapping avoids precision loss for 64-bit values. Coerce to int
+        # before comparing, or `items_per_page < page_size` throws
+        # "'<' not supported between instances of 'str' and 'int'".
+        total_results = int(body.get("totalResults", len(items) + len(page_items)))
         if on_page:
             on_page(page_items, page_number, total_results)
         items.extend(page_items)
 
-        items_per_page = body.get("itemsPerPage", len(page_items))
+        items_per_page = int(body.get("itemsPerPage", len(page_items)))
         if not page_items or items_per_page < page_size or len(items) >= total_results:
             break
         start_index += page_size
