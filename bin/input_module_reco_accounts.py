@@ -6,7 +6,6 @@ import reco_external_api as reco_api
 RESOURCE_PATH = "accounts/list"
 ITEMS_KEY = "accounts"
 DATA_SOURCE_LABEL = "enriched_account_view"  # preserved 1.x literal for backward-compatible searches
-DEFAULT_PAGE_SIZE = 1000
 # lastSeen = GREATEST(last_seen_time, last_activity_time, last_login_time),
 # all sourced from real vendor/event data (no periodic now()-stamping found
 # in the enrichment pipeline) -- safe for incremental filtering, unlike
@@ -23,7 +22,9 @@ def validate_input(helper, definition):
 def collect_events(helper, ew):
     """Fetch accounts from Reco's External API and send to Splunk."""
     helper.log_info("=== Starting reco_accounts collection job ===")
-    page_size = int(helper.get_arg('limit') or DEFAULT_PAGE_SIZE)
+    # 0/unset means "no limit" -- fetch_all() resolves that to the largest
+    # page size, since it already paginates through everything regardless.
+    page_size = helper.get_arg('limit')
     last_run = helper.get_check_point("reco_accounts_last_run") or {}
 
     tenant_url, api_key = reco_api.get_tenant_config(helper)

@@ -73,7 +73,7 @@ def log_exception(helper, context_msg, exc):
     helper.log_error(f"{context_msg}: {exc}\n{traceback.format_exc()}")
 
 
-def fetch_all(helper, tenant_url, api_key, resource_path, items_key, page_size=1000,
+def fetch_all(helper, tenant_url, api_key, resource_path, items_key, page_size=0,
               filters=None, sort_by=None, sort_order=None, timeout=30, on_page=None):
     """Page through a Reco External API list endpoint and return all items.
 
@@ -87,7 +87,11 @@ def fetch_all(helper, tenant_url, api_key, resource_path, items_key, page_size=1
     """
     # Splunk modular-input args (helper.get_arg) always come back as strings,
     # even for numeric fields, so page_size must be coerced before comparing.
-    page_size = min(int(page_size) if page_size else 1000, MAX_PAGE_SIZE)
+    # `limit`'s new default is 0/unset, meaning "no limit" -- since this
+    # already pages through every result regardless of page_size, "no limit"
+    # just means using the largest page size (fewest HTTP round trips).
+    page_size = int(page_size) if page_size else 0
+    page_size = min(page_size, MAX_PAGE_SIZE) if page_size > 0 else MAX_PAGE_SIZE
     headers = build_headers(api_key)
     url = f"{tenant_url}{EXTERNAL_API_BASE}/{resource_path}"
 

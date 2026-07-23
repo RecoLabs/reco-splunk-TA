@@ -6,7 +6,6 @@ import reco_external_api as reco_api
 RESOURCE_PATH = "apps/list"
 ITEMS_KEY = "apps"
 DATA_SOURCE_LABEL = "app_discovery"  # preserved 1.x literal for backward-compatible searches
-DEFAULT_PAGE_SIZE = 1000
 # lastSeen (last_use_time) is a MAX() aggregate of real login/authorization
 # event timestamps -- safe for incremental filtering. Note: app_discovery_v4
 # is a ClickHouse materialized view refreshed wholesale every 3h, so nothing
@@ -23,7 +22,9 @@ def validate_input(helper, definition):
 def collect_events(helper, ew):
     """Fetch discovered apps from Reco's External API and send to Splunk."""
     helper.log_info("=== Starting reco_discovery collection job ===")
-    page_size = int(helper.get_arg('limit') or DEFAULT_PAGE_SIZE)
+    # 0/unset means "no limit" -- fetch_all() resolves that to the largest
+    # page size, since it already paginates through everything regardless.
+    page_size = helper.get_arg('limit')
     last_run = helper.get_check_point("reco_discovery_last_run") or {}
 
     tenant_url, api_key = reco_api.get_tenant_config(helper)

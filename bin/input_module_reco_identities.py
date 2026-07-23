@@ -6,7 +6,6 @@ import reco_external_api as reco_api
 RESOURCE_PATH = "users/list"
 ITEMS_KEY = "users"  # the ListIdentities response envelope calls its array "users", not "identities"
 DATA_SOURCE_LABEL = "enriched_identity_view"  # preserved 1.x literal for backward-compatible searches
-DEFAULT_PAGE_SIZE = 1000
 # lastSeen = GREATEST(last_login_time, last_activity_time), both sourced
 # from the identity's mapped accounts' real vendor/event timestamps -- safe
 # for incremental filtering (verified: not touched by the periodic identity
@@ -22,7 +21,9 @@ def validate_input(helper, definition):
 def collect_events(helper, ew):
     """Fetch identities from Reco's External API and send to Splunk."""
     helper.log_info("=== Starting reco_identities collection job ===")
-    page_size = int(helper.get_arg('limit') or DEFAULT_PAGE_SIZE)
+    # 0/unset means "no limit" -- fetch_all() resolves that to the largest
+    # page size, since it already paginates through everything regardless.
+    page_size = helper.get_arg('limit')
     last_run = helper.get_check_point("reco_identities_last_run") or {}
 
     tenant_url, api_key = reco_api.get_tenant_config(helper)

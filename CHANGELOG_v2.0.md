@@ -289,12 +289,17 @@ already the one working 1.x incremental input.
 `value_key`, `body`, `additional_info`, `user_identity_primary_email`,
 `object_identity_primary_email`, `object_id_identity_primary_email`.
 
+## Removed in this release
+
+- The bundled 1.x dashboards (`reco__posture`, `reco__posture__details`,
+  `reco__alerts`, `reco__alert__history`, `reco__accounts`,
+  `reco__discovery`, `reco__users`) referenced 1.x field names and would not
+  have rendered correctly against 2.0 data, so they were removed rather than
+  updated. The app's nav now only shows Inputs, Configuration, and Search.
+  Rebuild any of these as a custom dashboard against the 2.0 field names
+  above if you relied on them.
+
 ## Not addressed in this release (follow-up needed)
 
-- Bundled dashboards (`reco__posture`, `reco__posture__details`,
-  `reco__alerts`, `reco__alert__history`, `reco__accounts`,
-  `reco__discovery`, `reco__users`) reference 1.x field names and will need
-  their SPL updated to the 2.0 field names above before they render
-  correctly.
 - `status` (posture) / `alert_status` (alerts) input args remain
   unapplied — unchanged from 1.x, not part of this migration's scope.

@@ -42,16 +42,21 @@ Then enable the inputs you need under **Inputs**:
 
 | Input | Reco resource | Default interval | Default `limit` (page size) | Other args |
 |---|---|---|---|---|
-| `reco_posture` | Posture issues/findings | 3600s | 1000 | `status` (unused, see Known limitations) |
-| `reco_alerts` | Threat alerts | 30s | 1000 | `alert_status` (unused, see Known limitations) |
-| `reco_accounts` | Enriched accounts | 43200s | 1000 | — |
-| `reco_discovery` | Discovered apps (Shadow IT / SaaS discovery) | 43200s | 1000 | — |
-| `reco_identities` | Identities | 43200s | 1000 | — |
-| `reco_system_logs` | Audit logs | 30s | 1000 | — |
+| `reco_posture` | Posture issues/findings | 3600s | 0 (no limit) | `status` (unused, see Known limitations) |
+| `reco_alerts` | Threat alerts | 30s | 0 (no limit) | `alert_status` (unused, see Known limitations) |
+| `reco_accounts` | Enriched accounts | 43200s | 0 (no limit) | — |
+| `reco_discovery` | Discovered apps (Shadow IT / SaaS discovery) | 43200s | 0 (no limit) | — |
+| `reco_identities` | Identities | 43200s | 0 (no limit) | — |
+| `reco_system_logs` | Audit logs | 30s | 0 (no limit) | — |
 
 `limit` controls the External API page size per request (max 10000); every
-input now pages through **all** matching results, not just the first page
-(see "Behavior changes" below).
+input pages through **all** matching results regardless of `limit` (see
+`CHANGELOG_v2.0.md`'s "Cross-cutting changes" for why), so `limit` only
+affects how many items are requested per HTTP call, not how much data is
+collected. `0` (the default) or unset means "no limit" — the TA uses the
+largest page size (10000) to minimize round trips. Set it lower only if you
+need smaller per-request payloads (e.g. for a slow/constrained network path
+to the tenant).
 
 ## Incremental polling
 
@@ -92,12 +97,14 @@ Every input now tracks a checkpoint so repeat polls only fetch new/changed data:
 ## Upgrading from 1.x
 
 This is a breaking change for anything built on the raw event JSON (saved
-searches, dashboards, alerts). The bundled dashboards
+searches, dashboards, alerts). The bundled dashboards that shipped with 1.x
 (`reco__posture`, `reco__posture__details`, `reco__alerts`,
 `reco__alert__history`, `reco__accounts`, `reco__discovery`, `reco__users`)
-reference 1.x field names and **will need to be updated** to the 2.0 field
-names before they render correctly — this was not done as part of the 2.0
-release and should be tracked as a follow-up.
+referenced 1.x field names and would not have rendered correctly against 2.0
+data, so **they were removed in 2.0** rather than updated. If you relied on
+any of them, rebuild the equivalent view/dashboard yourself against the 2.0
+field names in [`CHANGELOG_v2.0.md`](CHANGELOG_v2.0.md) — the app's nav now
+only shows Inputs, Configuration, and Search.
 
 At a high level:
 - Every event is now plain JSON with camelCase keys — no more base64-encoded

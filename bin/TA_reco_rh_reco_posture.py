@@ -44,7 +44,7 @@ fields = [
         'limit',
         required=False,
         encrypted=False,
-        default='1000',
+        default='0',
         validator=validator.String(
             min_len=0, 
             max_len=8192, 

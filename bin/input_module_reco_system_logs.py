@@ -7,7 +7,6 @@ RESOURCE_PATH = "audit-logs/list"
 ITEMS_KEY = "auditLogs"
 TIMESTAMP_FIELD = "timestamp"
 DATA_SOURCE_LABEL = "system_logs_view"  # preserved 1.x literal for backward-compatible searches
-DEFAULT_PAGE_SIZE = 1000
 
 
 def validate_input(helper, definition):
@@ -18,7 +17,9 @@ def validate_input(helper, definition):
 def collect_events(helper, ew):
     """Fetch system/audit logs from Reco's External API and send to Splunk."""
     helper.log_info("=== Starting reco_system_logs collection job ===")
-    page_size = int(helper.get_arg('limit') or DEFAULT_PAGE_SIZE)
+    # 0/unset means "no limit" -- fetch_all() resolves that to the largest
+    # page size, since it already paginates through everything regardless.
+    page_size = helper.get_arg('limit')
     last_run = helper.get_check_point("reco_system_logs_last_run") or {}
 
     tenant_url, api_key = reco_api.get_tenant_config(helper)
