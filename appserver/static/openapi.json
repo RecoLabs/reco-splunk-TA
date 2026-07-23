@@ -2,8 +2,8 @@
     "openapi": "3.0.0",
     "info": {
         "title": "TA-reco",
-        "version": "1.0.3",
-        "description": "Reco",
+        "version": "2.0.0",
+        "description": "Reco is the solution trusted by modern enterprises to secure SaaS AI, applications, and agents. Our SaaS & AI Security platform provides complete visibility and control across your entire SaaS ecosystem — from core SaaS applications to the latest AI agents — enabling security teams to keep pace with the speed of AI adoption while maintaining airtight security and reducing risk.",
         "contact": {
             "name": "gal@reco.ai"
         }

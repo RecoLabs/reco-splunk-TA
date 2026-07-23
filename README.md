@@ -1,9 +1,14 @@
 # reco-splunk-TA
 
-Splunk Technology Add-on for [Reco](https://reco.ai) — a full-lifecycle SaaS
-security platform. It pulls posture findings, threat alerts, accounts,
-discovered apps, identities, and audit/system logs from your Reco tenant into
-Splunk.
+Splunk Technology Add-on for [Reco](https://reco.ai), the solution trusted by
+modern enterprises to secure SaaS AI, applications, and agents. Reco's SaaS &
+AI Security platform provides complete visibility and control across your
+entire SaaS ecosystem — from core SaaS applications to the latest AI agents —
+enabling security teams to keep pace with the speed of AI adoption while
+maintaining airtight security and reducing risk.
+
+This add-on pulls posture findings, threat alerts, accounts, discovered apps,
+identities, and audit/system logs from your Reco tenant into Splunk.
 
 ## Version 2.0
 
