@@ -55,7 +55,7 @@ input now pages through **all** matching results, not just the first page
 
 ## Incremental polling
 
-Three inputs track a checkpoint so repeat polls only fetch new data:
+Every input now tracks a checkpoint so repeat polls only fetch new/changed data:
 
 - **`reco_posture`** filters on `currentStatusSince` — the one posture-issue
   timestamp that's genuinely change-conditioned. `updatedAt`/`createdAt` are
@@ -68,11 +68,18 @@ Three inputs track a checkpoint so repeat polls only fetch new data:
   `createdAt` is stable here and won't cause duplicates.
 - **`reco_system_logs`** filters on `timestamp` (unchanged from 1.x — this
   was already the one 1.x input with working incremental logic).
-
-`reco_accounts`, `reco_discovery`, and `reco_identities` do a full re-pull on
-every poll — unchanged from 1.x, where the incremental-checkpoint code for
-these three was unreachable dead code, so this was already their effective
-behavior.
+- **`reco_accounts`, `reco_discovery`, `reco_identities`** filter on
+  `lastSeen` — an aggregate of real vendor/event timestamps (last activity,
+  login, or usage, depending on the entity), verified to be genuinely
+  change-conditioned and not touched by any periodic recompute regardless of
+  real change (unlike `updatedAt`/`createdAt` on these same entities, which
+  *are* unconditionally re-stamped on their periodic enrichment recompute —
+  the same trap posture's `updatedAt` was). 1.x never applied a filter here
+  at all (the checkpoint code was dead), so this is new in 2.0.
+  **Known limitation:** `reco_discovery`'s backing data
+  (`app_discovery_v4`) is a ClickHouse materialized view refreshed wholesale
+  every 3 hours — polling more frequently than that won't surface anything
+  new between refreshes, regardless of filter.
 
 ## Known limitations (carried forward from 1.x, unchanged)
 

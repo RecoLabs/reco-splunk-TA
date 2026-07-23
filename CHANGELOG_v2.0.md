@@ -104,7 +104,15 @@ pattern is no longer *required*, but it's kept in 2.0 to preserve the full
 ## Accounts (`reco_accounts`)
 
 Old: raw `enriched_account_view` columns (95 columns) via `asset-management/query`.
-New: `GET /api/v1/external-api/accounts/list` → `Account` (34 fields). No incremental filter in either version (1.x's checkpoint code was dead/unreachable; unchanged).
+New: `GET /api/v1/external-api/accounts/list` → `Account` (34 fields).
+**Incremental filter added in 2.0**: `lastSeen` (1.x's checkpoint code here was
+dead/unreachable, so 1.x always did a full re-pull). `lastSeen` is
+`GREATEST(last_seen_time, last_activity_time, last_login_time)`, all sourced
+from real vendor/event data with no periodic re-stamping found in the
+enrichment pipeline -- verified safe the same way `currentStatusSince` was
+verified for posture. `updatedAt`/`createdAt` are *not* safe here -- they are unconditionally
+re-stamped by the periodic account-insight recompute, the same trap
+posture's `updatedAt` was.
 
 | 1.x column | 2.0 field |
 |---|---|
@@ -172,8 +180,13 @@ Old: `app_discovery` (48 columns, deleted from the codebase in favor of v4 —
 recovered from git history) via `asset-management/query`. New:
 `GET /api/v1/external-api/apps/list` → `App`, backed by `app_discovery_v4`
 (a newer generation of the same view; same join skeleton, several fields
-only exist starting in v4). No incremental filter in either version
-(unchanged).
+only exist starting in v4).
+**Incremental filter added in 2.0**: `lastSeen` (←`last_use_time`), a MAX()
+aggregate of real login/authorization event timestamps -- verified safe
+(not `now()`-stamped). **Known limitation**: `app_discovery_v4` is a
+ClickHouse materialized view refreshed wholesale every 3 hours, so nothing
+new will appear between refreshes regardless of poll interval or filter --
+a freshness ceiling, not a duplicate-event risk.
 
 | 1.x column | 2.0 field | Note |
 |---|---|---|
@@ -220,7 +233,11 @@ column, not a real loss), `last_thirty_days_score`, `company_size`,
 Old: `enriched_identity_view` (27 columns) via `asset-management/query`. New:
 `GET /api/v1/external-api/users/list` (note: URL path says "users"; the
 response array key is also `users`, not `identities`) → `Identity` (16
-fields). No incremental filter in either version (unchanged).
+fields).
+**Incremental filter added in 2.0**: `lastSeen`
+(`GREATEST(last_login_time, last_activity_time)`, aggregated from the
+identity's mapped accounts' real vendor/event timestamps) -- verified safe.
+`updatedAt`/`createdAt` are not safe here for the same reason as accounts.
 
 | 1.x column | 2.0 field |
 |---|---|
