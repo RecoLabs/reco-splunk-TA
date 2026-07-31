@@ -2,7 +2,7 @@
     "meta": {
         "name": "TA-reco",
         "displayName": "Reco",
-        "version": "2.0.0",
+        "version": "2.1.0",
         "restRoot": "TA_reco",
         "schemaVersion": "0.0.10",
         "supportedPythonVersion": [
