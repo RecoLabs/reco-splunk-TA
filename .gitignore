@@ -15,6 +15,8 @@ downloads/
 eggs/
 .eggs/
 lib/
+!/lib/
+!/package/lib/
 lib64/
 parts/
 sdist/
@@ -30,7 +32,10 @@ MANIFEST
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
+!/app.manifest
+!/package/app.manifest
 *.spec
+!/README/*.spec
 
 # Installer logs
 pip-log.txt

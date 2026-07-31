@@ -3,7 +3,7 @@
     "info": {
         "title": "TA-reco",
         "version": "2.0.0",
-        "description": "Reco is the solution trusted by modern enterprises to secure SaaS AI, applications, and agents. Our SaaS & AI Security platform provides complete visibility and control across your entire SaaS ecosystem — from core SaaS applications to the latest AI agents — enabling security teams to keep pace with the speed of AI adoption while maintaining airtight security and reducing risk.",
+        "description": "Reco",
         "contact": {
             "name": "gal@reco.ai"
         }
@@ -101,6 +101,9 @@
                             "3"
                         ]
                     },
+                    "sourcetype": {
+                        "type": "string"
+                    },
                     "disabled": {
                         "type": "string",
                         "enum": [
@@ -129,6 +132,9 @@
                             "2",
                             "3"
                         ]
+                    },
+                    "sourcetype": {
+                        "type": "string"
                     },
                     "disabled": {
                         "type": "string",
@@ -161,6 +167,9 @@
                             "2",
                             "3"
                         ]
+                    },
+                    "sourcetype": {
+                        "type": "string"
                     }
                 }
             },
@@ -184,6 +193,9 @@
                         ]
                     },
                     "limit": {
+                        "type": "string"
+                    },
+                    "sourcetype": {
                         "type": "string"
                     },
                     "disabled": {
@@ -212,6 +224,9 @@
                         ]
                     },
                     "limit": {
+                        "type": "string"
+                    },
+                    "sourcetype": {
                         "type": "string"
                     },
                     "disabled": {
@@ -244,6 +259,9 @@
                     },
                     "limit": {
                         "type": "string"
+                    },
+                    "sourcetype": {
+                        "type": "string"
                     }
                 }
             },
@@ -260,6 +278,9 @@
                         "type": "string"
                     },
                     "limit": {
+                        "type": "string"
+                    },
+                    "sourcetype": {
                         "type": "string"
                     },
                     "disabled": {
@@ -281,6 +302,9 @@
                         "type": "string"
                     },
                     "limit": {
+                        "type": "string"
+                    },
+                    "sourcetype": {
                         "type": "string"
                     },
                     "disabled": {
@@ -306,6 +330,9 @@
                     },
                     "limit": {
                         "type": "string"
+                    },
+                    "sourcetype": {
+                        "type": "string"
                     }
                 }
             },
@@ -322,6 +349,9 @@
                         "type": "string"
                     },
                     "limit": {
+                        "type": "string"
+                    },
+                    "sourcetype": {
                         "type": "string"
                     },
                     "disabled": {
@@ -343,6 +373,9 @@
                         "type": "string"
                     },
                     "limit": {
+                        "type": "string"
+                    },
+                    "sourcetype": {
                         "type": "string"
                     },
                     "disabled": {
@@ -368,6 +401,9 @@
                     },
                     "limit": {
                         "type": "string"
+                    },
+                    "sourcetype": {
+                        "type": "string"
                     }
                 }
             },
@@ -384,6 +420,9 @@
                         "type": "string"
                     },
                     "limit": {
+                        "type": "string"
+                    },
+                    "sourcetype": {
                         "type": "string"
                     },
                     "disabled": {
@@ -405,6 +444,9 @@
                         "type": "string"
                     },
                     "limit": {
+                        "type": "string"
+                    },
+                    "sourcetype": {
                         "type": "string"
                     },
                     "disabled": {
@@ -430,6 +472,9 @@
                     },
                     "limit": {
                         "type": "string"
+                    },
+                    "sourcetype": {
+                        "type": "string"
                     }
                 }
             },
@@ -446,6 +491,9 @@
                         "type": "string"
                     },
                     "limit": {
+                        "type": "string"
+                    },
+                    "sourcetype": {
                         "type": "string"
                     },
                     "disabled": {
@@ -467,6 +515,9 @@
                         "type": "string"
                     },
                     "limit": {
+                        "type": "string"
+                    },
+                    "sourcetype": {
                         "type": "string"
                     },
                     "disabled": {
@@ -491,6 +542,9 @@
                         "type": "string"
                     },
                     "limit": {
+                        "type": "string"
+                    },
+                    "sourcetype": {
                         "type": "string"
                     }
                 }

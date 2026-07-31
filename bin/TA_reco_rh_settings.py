@@ -1,5 +1,5 @@
 
-import ta_reco_declare
+import import_declare_test
 
 from splunktaucclib.rest_handler.endpoint import (
     field,
@@ -8,7 +8,8 @@ from splunktaucclib.rest_handler.endpoint import (
     MultipleModel,
 )
 from splunktaucclib.rest_handler import admin_external, util
-from splunk_aoblib.rest_migration import ConfigMigrationHandler
+from splunktaucclib.rest_handler.admin_external import AdminExternalHandler
+import logging
 
 util.remove_http_proxy_env_vars()
 
@@ -16,7 +17,7 @@ util.remove_http_proxy_env_vars()
 fields_logging = [
     field.RestField(
         'loglevel',
-        required=False,
+        required=True,
         encrypted=False,
         default='INFO',
         validator=None
@@ -32,8 +33,8 @@ fields_additional_parameters = [
         encrypted=False,
         default='',
         validator=validator.String(
-            min_len=0, 
             max_len=8192, 
+            min_len=0, 
         )
     ), 
     field.RestField(
@@ -42,8 +43,8 @@ fields_additional_parameters = [
         encrypted=True,
         default='',
         validator=validator.String(
-            min_len=0, 
             max_len=8192, 
+            min_len=0, 
         )
     )
 ]
@@ -56,11 +57,13 @@ endpoint = MultipleModel(
         model_logging, 
         model_additional_parameters
     ],
+    need_reload=False,
 )
 
 
 if __name__ == '__main__':
+    logging.getLogger().addHandler(logging.NullHandler())
     admin_external.handle(
         endpoint,
-        handler=ConfigMigrationHandler,
+        handler=AdminExternalHandler,
     )
