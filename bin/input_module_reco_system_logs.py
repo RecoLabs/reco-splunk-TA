@@ -30,17 +30,19 @@ def collect_events(helper, ew):
     reco_api.log_checkpoint_state(helper, after, TIMESTAMP_FIELD)
 
     all_logs = []
+    succeeded = False
     try:
         all_logs = fetch_all_system_logs(helper, tenant_url, api_key, page_size, after)
         helper.log_info(f"Total system logs fetched: {len(all_logs)}")
         send_events(all_logs, helper, ew)
+        succeeded = True
     except Exception as e:
         reco_api.log_exception(helper, "Error fetching system logs data", e)
 
-    if all_logs:
+    if succeeded:
         reco_api.save_checkpoint(helper, "reco_system_logs_last_run", datetime.now())
     else:
-        helper.log_info("No system logs fetched this run -- checkpoint left unchanged")
+        helper.log_info("Error fetching system logs data this run -- checkpoint left unchanged")
     helper.log_info("=== Finished reco_system_logs collection job ===")
 
 

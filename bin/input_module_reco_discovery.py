@@ -35,14 +35,19 @@ def collect_events(helper, ew):
     reco_api.log_checkpoint_state(helper, after, LAST_SEEN_FIELD)
 
     all_apps = []
+    succeeded = False
     try:
         all_apps = fetch_all_apps(helper, tenant_url, api_key, page_size, after)
         helper.log_info(f"Total apps fetched: {len(all_apps)}")
         send_events(all_apps, helper, ew)
+        succeeded = True
     except Exception as e:
         reco_api.log_exception(helper, "Error fetching app discovery data", e)
 
-    reco_api.save_checkpoint(helper, "reco_discovery_last_run", datetime.now())
+    if succeeded:
+        reco_api.save_checkpoint(helper, "reco_discovery_last_run", datetime.now())
+    else:
+        helper.log_info("Error fetching app discovery data this run -- checkpoint left unchanged")
     helper.log_info("=== Finished reco_discovery collection job ===")
 
 

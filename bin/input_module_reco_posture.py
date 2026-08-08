@@ -35,14 +35,19 @@ def collect_events(helper, ew):
     reco_api.log_checkpoint_state(helper, after, STATUS_SINCE_FIELD)
 
     issues = []
+    succeeded = False
     try:
         issues = fetch_posture_issues(helper, tenant_url, api_key, max_fetch, status, after)
         helper.log_info(f"Fetched {len(issues)} posture issues.")
         send_events(issues, helper, ew)
+        succeeded = True
     except Exception as e:
         reco_api.log_exception(helper, "Error fetching posture issues", e)
 
-    reco_api.save_checkpoint(helper, "last_run1", datetime.now())
+    if succeeded:
+        reco_api.save_checkpoint(helper, "last_run1", datetime.now())
+    else:
+        helper.log_info("Error fetching posture issues this run -- checkpoint left unchanged")
     helper.log_info("=== Finished reco_posture collection job ===")
 
 

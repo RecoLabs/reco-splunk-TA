@@ -34,14 +34,19 @@ def collect_events(helper, ew):
     reco_api.log_checkpoint_state(helper, after, LAST_SEEN_FIELD)
 
     all_identities = []
+    succeeded = False
     try:
         all_identities = fetch_all_identities(helper, tenant_url, api_key, page_size, after)
         helper.log_info(f"Total identities fetched: {len(all_identities)}")
         send_events(all_identities, helper, ew)
+        succeeded = True
     except Exception as e:
         reco_api.log_exception(helper, "Error fetching identities", e)
 
-    reco_api.save_checkpoint(helper, "reco_identities_last_run", datetime.now())
+    if succeeded:
+        reco_api.save_checkpoint(helper, "reco_identities_last_run", datetime.now())
+    else:
+        helper.log_info("Error fetching identities this run -- checkpoint left unchanged")
     helper.log_info("=== Finished reco_identities collection job ===")
 
 

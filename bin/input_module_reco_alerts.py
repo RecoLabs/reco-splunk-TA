@@ -29,17 +29,19 @@ def collect_events(helper, ew):
     reco_api.log_checkpoint_state(helper, after, CREATED_AT_FIELD)
 
     alerts = []
+    succeeded = False
     try:
         alerts = fetch_reco_alerts(helper, tenant_url, api_key, max_fetch, status, after)
         helper.log_info(f"Fetched {len(alerts)} alerts.")
         send_events(alerts, helper, ew)
+        succeeded = True
     except Exception as e:
         reco_api.log_exception(helper, "Error fetching alerts", e)
 
-    if alerts:
+    if succeeded:
         reco_api.save_checkpoint(helper, "last_run", datetime.now())
     else:
-        helper.log_info("No alerts fetched this run -- checkpoint left unchanged")
+        helper.log_info("Error fetching alerts this run -- checkpoint left unchanged")
     helper.log_info("=== Finished reco_alerts collection job ===")
 
 
