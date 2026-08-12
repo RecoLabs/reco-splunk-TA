@@ -124,3 +124,26 @@ diff per input.
 auth headers, checkpoint formatting) used by every `input_module_reco_*.py`.
 Each input module still follows the Splunk Add-on Builder convention: don't
 edit `reco_*.py` (auto-generated wrapper) — only edit `input_module_reco_*.py`.
+
+### Rebuilding (UCC framework)
+
+As of the UCC 6.5.3 migration, `globalConfig.json` + `package/` at repo root
+are the source of truth for the Configuration/Inputs UI schema, REST
+handlers, and conf file generation — `default/`, `appserver/`, `bin/`
+(excluding the `input_module_reco_*.py`/`reco_external_api.py` files, which
+live in `package/bin/` and are just copied through), `metadata/`, `static/`,
+and `lib/` at repo root are all *build output*, not hand-edited directly.
+
+To rebuild after changing `globalConfig.json` or anything under `package/`:
+
+```bash
+pip install splunk-add-on-ucc-framework
+ucc-gen build --ta-version 2.0.0 -o /tmp/ucc-out
+rsync -a --delete /tmp/ucc-out/TA-reco/ ./  # review the diff before committing
+```
+
+`package/lib/requirements.txt` pins `solnlib<8.0.0` deliberately — solnlib
+8.0+ pulls in grpcio/opentelemetry/protobuf for tracing this add-on doesn't
+use, and grpcio ships a platform-compiled `.so` that would only work on
+whatever machine ran the build. Don't remove that pin without checking what
+it drags in.

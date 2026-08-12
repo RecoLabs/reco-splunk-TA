@@ -1,0 +1,56 @@
+{
+    "dependencies": {},
+    "incompatibleApps": {},
+    "info": {
+        "author": [
+            {
+                "company": null,
+                "email": null,
+                "name": "gal@reco.ai"
+            }
+        ],
+        "classification": {
+            "categories": [],
+            "developmentStatus": null,
+            "intendedAudience": null
+        },
+        "commonInformationModels": null,
+        "description": "Reco is the solution trusted by modern enterprises to secure SaaS AI, applications, and agents. Our SaaS & AI Security platform provides complete visibility and control across your entire SaaS ecosystem \u2014 from core SaaS applications to the latest AI agents \u2014 enabling security teams to keep pace with the speed of AI adoption while maintaining airtight security and reducing risk.",
+        "id": {
+            "group": null,
+            "name": "TA-reco",
+            "version": "2.1.0"
+        },
+        "license": {
+            "name": null,
+            "text": null,
+            "uri": null
+        },
+        "privacyPolicy": {
+            "name": null,
+            "text": null,
+            "uri": null
+        },
+        "releaseDate": null,
+        "releaseNotes": {
+            "name": null,
+            "text": null,
+            "uri": null
+        },
+        "title": "Reco"
+    },
+    "inputGroups": {},
+    "platformRequirements": {
+        "splunk": {
+            "Enterprise": "*"
+        }
+    },
+    "schemaVersion": "2.0.0",
+    "supportedDeployments": [
+        "*"
+    ],
+    "targetWorkloads": [
+        "*"
+    ],
+    "tasks": []
+}

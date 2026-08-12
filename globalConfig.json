@@ -1,0 +1,732 @@
+{
+    "meta": {
+        "name": "TA-reco",
+        "displayName": "Reco",
+        "version": "2.1.0",
+        "restRoot": "TA_reco",
+        "schemaVersion": "0.0.10",
+        "supportedPythonVersion": [
+            "3.13"
+        ]
+    },
+    "pages": {
+        "configuration": {
+            "title": "Configuration",
+            "description": "Set up your add-on",
+            "tabs": [
+                {
+                    "name": "logging",
+                    "title": "Logging",
+                    "entity": [
+                        {
+                            "type": "singleSelect",
+                            "label": "Log level",
+                            "options": {
+                                "disableSearch": true,
+                                "autoCompleteFields": [
+                                    {
+                                        "value": "DEBUG",
+                                        "label": "DEBUG"
+                                    },
+                                    {
+                                        "value": "INFO",
+                                        "label": "INFO"
+                                    },
+                                    {
+                                        "value": "WARNING",
+                                        "label": "WARNING"
+                                    },
+                                    {
+                                        "value": "ERROR",
+                                        "label": "ERROR"
+                                    },
+                                    {
+                                        "value": "CRITICAL",
+                                        "label": "CRITICAL"
+                                    }
+                                ]
+                            },
+                            "defaultValue": "INFO",
+                            "field": "loglevel",
+                            "required": true
+                        }
+                    ]
+                },
+                {
+                    "name": "additional_parameters",
+                    "title": "Add-on Settings",
+                    "entity": [
+                        {
+                            "field": "tenant_url",
+                            "label": "Tenant URL",
+                            "type": "text",
+                            "help": "",
+                            "required": false,
+                            "defaultValue": "",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 8192,
+                                    "errorMsg": "Max length of text input is 8192"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "api_key",
+                            "label": "API Key",
+                            "type": "text",
+                            "help": "",
+                            "required": false,
+                            "defaultValue": "",
+                            "encrypted": true,
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 8192,
+                                    "errorMsg": "Max length of password is 8192"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        "inputs": {
+            "title": "Inputs",
+            "description": "Manage your data inputs",
+            "table": {
+                "header": [
+                    {
+                        "field": "name",
+                        "label": "Name"
+                    },
+                    {
+                        "field": "interval",
+                        "label": "Interval"
+                    },
+                    {
+                        "field": "index",
+                        "label": "Index"
+                    },
+                    {
+                        "field": "disabled",
+                        "label": "Status"
+                    }
+                ],
+                "moreInfo": [
+                    {
+                        "field": "name",
+                        "label": "Name"
+                    },
+                    {
+                        "field": "interval",
+                        "label": "Interval"
+                    },
+                    {
+                        "field": "index",
+                        "label": "Index"
+                    },
+                    {
+                        "field": "disabled",
+                        "label": "Status"
+                    },
+                    {
+                        "field": "limit",
+                        "label": "Limit"
+                    },
+                    {
+                        "field": "alert_status",
+                        "label": "Alert Status"
+                    },
+                    {
+                        "field": "status",
+                        "label": "Status"
+                    }
+                ],
+                "actions": [
+                    "edit",
+                    "delete",
+                    "clone"
+                ]
+            },
+            "services": [
+                {
+                    "template": "input_with_helper",
+                    "name": "reco_alerts",
+                    "title": "Reco Alerts",
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "help": "Enter a unique name for the data input",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^[a-zA-Z]\\w*$",
+                                    "errorMsg": "Input Name must start with a letter and followed by alphabetic letters, digits or underscores."
+                                },
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100,
+                                    "errorMsg": "Length of input name should be between 1 and 100"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "text",
+                            "field": "interval",
+                            "label": "Interval",
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Interval must be either a non-negative number or -1.",
+                                    "pattern": "^(?:-1|\\d+(?:\\.\\d+)?)$"
+                                }
+                            ],
+                            "help": "Time interval of input in seconds.",
+                            "required": true,
+                            "defaultValue": 30
+                        },
+                        {
+                            "field": "index",
+                            "label": "Index",
+                            "type": "singleSelect",
+                            "defaultValue": "default",
+                            "options": {
+                                "endpointUrl": "data/indexes",
+                                "denyList": "^_.*$",
+                                "createSearchChoice": true
+                            },
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 80,
+                                    "errorMsg": "Length of index name should be between 1 and 80."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "limit",
+                            "label": "Limit",
+                            "help": "",
+                            "required": false,
+                            "type": "text",
+                            "defaultValue": "0",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 8192,
+                                    "errorMsg": "Max length of text input is 8192"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "alert_status",
+                            "label": "Alert Status",
+                            "help": "",
+                            "required": false,
+                            "type": "singleSelect",
+                            "defaultValue": "1",
+                            "options": {
+                                "disableSearch": true,
+                                "autoCompleteFields": [
+                                    {
+                                        "value": "1",
+                                        "label": "New"
+                                    },
+                                    {
+                                        "value": "2",
+                                        "label": "In Progress"
+                                    },
+                                    {
+                                        "value": "3",
+                                        "label": "Closed"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "field": "sourcetype",
+                            "label": "Source type",
+                            "type": "text",
+                            "defaultValue": "recoAlerts",
+                            "required": true,
+                            "options": {
+                                "display": false
+                            }
+                        }
+                    ]
+                },
+                {
+                    "template": "input_with_helper",
+                    "name": "reco_posture",
+                    "title": "Reco Posture",
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "help": "Enter a unique name for the data input",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^[a-zA-Z]\\w*$",
+                                    "errorMsg": "Input Name must start with a letter and followed by alphabetic letters, digits or underscores."
+                                },
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100,
+                                    "errorMsg": "Length of input name should be between 1 and 100"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "text",
+                            "field": "interval",
+                            "label": "Interval",
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Interval must be either a non-negative number or -1.",
+                                    "pattern": "^(?:-1|\\d+(?:\\.\\d+)?)$"
+                                }
+                            ],
+                            "help": "Time interval of input in seconds.",
+                            "required": true,
+                            "defaultValue": 3600
+                        },
+                        {
+                            "field": "index",
+                            "label": "Index",
+                            "type": "singleSelect",
+                            "defaultValue": "default",
+                            "options": {
+                                "endpointUrl": "data/indexes",
+                                "denyList": "^_.*$",
+                                "createSearchChoice": true
+                            },
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 80,
+                                    "errorMsg": "Length of index name should be between 1 and 80."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "status",
+                            "label": "Status",
+                            "help": "",
+                            "required": false,
+                            "type": "singleSelect",
+                            "defaultValue": "5",
+                            "options": {
+                                "disableSearch": true,
+                                "autoCompleteFields": [
+                                    {
+                                        "value": "5",
+                                        "label": "To Review"
+                                    },
+                                    {
+                                        "value": "6",
+                                        "label": "Passed"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "field": "limit",
+                            "label": "Limit",
+                            "help": "",
+                            "required": false,
+                            "type": "text",
+                            "defaultValue": "0",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 8192,
+                                    "errorMsg": "Max length of text input is 8192"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "sourcetype",
+                            "label": "Source type",
+                            "type": "text",
+                            "defaultValue": "reco-posture",
+                            "required": true,
+                            "options": {
+                                "display": false
+                            }
+                        }
+                    ]
+                },
+                {
+                    "template": "input_with_helper",
+                    "name": "reco_identities",
+                    "title": "Reco Identities",
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "help": "Enter a unique name for the data input",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^[a-zA-Z]\\w*$",
+                                    "errorMsg": "Input Name must start with a letter and followed by alphabetic letters, digits or underscores."
+                                },
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100,
+                                    "errorMsg": "Length of input name should be between 1 and 100"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "text",
+                            "field": "interval",
+                            "label": "Interval",
+                            "defaultValue": "43200",
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Interval must be either a non-negative number or -1.",
+                                    "pattern": "^(?:-1|\\d+(?:\\.\\d+)?)$"
+                                }
+                            ],
+                            "help": "Time interval of input in seconds.",
+                            "required": true
+                        },
+                        {
+                            "field": "index",
+                            "label": "Index",
+                            "type": "singleSelect",
+                            "defaultValue": "default",
+                            "options": {
+                                "endpointUrl": "data/indexes",
+                                "denyList": "^_.*$",
+                                "createSearchChoice": true
+                            },
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 80,
+                                    "errorMsg": "Length of index name should be between 1 and 80."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "limit",
+                            "label": "Limit",
+                            "help": "",
+                            "required": false,
+                            "type": "text",
+                            "defaultValue": "0",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 8192,
+                                    "errorMsg": "Max length of text input is 8192"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "sourcetype",
+                            "label": "Source type",
+                            "type": "text",
+                            "defaultValue": "recoIdentities",
+                            "required": true,
+                            "options": {
+                                "display": false
+                            }
+                        }
+                    ]
+                },
+                {
+                    "template": "input_with_helper",
+                    "name": "reco_discovery",
+                    "title": "Reco Discovery",
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "help": "Enter a unique name for the data input",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^[a-zA-Z]\\w*$",
+                                    "errorMsg": "Input Name must start with a letter and followed by alphabetic letters, digits or underscores."
+                                },
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100,
+                                    "errorMsg": "Length of input name should be between 1 and 100"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "text",
+                            "field": "interval",
+                            "label": "Interval",
+                            "defaultValue": "43200",
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Interval must be either a non-negative number or -1.",
+                                    "pattern": "^(?:-1|\\d+(?:\\.\\d+)?)$"
+                                }
+                            ],
+                            "help": "Time interval of input in seconds.",
+                            "required": true
+                        },
+                        {
+                            "field": "index",
+                            "label": "Index",
+                            "type": "singleSelect",
+                            "defaultValue": "default",
+                            "options": {
+                                "endpointUrl": "data/indexes",
+                                "denyList": "^_.*$",
+                                "createSearchChoice": true
+                            },
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 80,
+                                    "errorMsg": "Length of index name should be between 1 and 80."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "limit",
+                            "label": "Limit",
+                            "help": "",
+                            "required": false,
+                            "type": "text",
+                            "defaultValue": "0",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 8192,
+                                    "errorMsg": "Max length of text input is 8192"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "sourcetype",
+                            "label": "Source type",
+                            "type": "text",
+                            "defaultValue": "recoDiscovery",
+                            "required": true,
+                            "options": {
+                                "display": false
+                            }
+                        }
+                    ]
+                },
+                {
+                    "template": "input_with_helper",
+                    "name": "reco_system_logs",
+                    "title": "Reco System Logs",
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "help": "Enter a unique name for the data input",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^[a-zA-Z]\\w*$",
+                                    "errorMsg": "Input Name must start with a letter and followed by alphabetic letters, digits or underscores."
+                                },
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100,
+                                    "errorMsg": "Length of input name should be between 1 and 100"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "text",
+                            "field": "interval",
+                            "label": "Interval",
+                            "defaultValue": 30,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Interval must be either a non-negative number or -1.",
+                                    "pattern": "^(?:-1|\\d+(?:\\.\\d+)?)$"
+                                }
+                            ],
+                            "help": "Time interval of input in seconds.",
+                            "required": true
+                        },
+                        {
+                            "field": "index",
+                            "label": "Index",
+                            "type": "singleSelect",
+                            "defaultValue": "default",
+                            "options": {
+                                "endpointUrl": "data/indexes",
+                                "denyList": "^_.*$",
+                                "createSearchChoice": true
+                            },
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 80,
+                                    "errorMsg": "Length of index name should be between 1 and 80."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "limit",
+                            "label": "Limit",
+                            "help": "",
+                            "required": false,
+                            "type": "text",
+                            "defaultValue": "0",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 8192,
+                                    "errorMsg": "Max length of text input is 8192"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "sourcetype",
+                            "label": "Source type",
+                            "type": "text",
+                            "defaultValue": "recoSystemLogs",
+                            "required": true,
+                            "options": {
+                                "display": false
+                            }
+                        }
+                    ]
+                },
+                {
+                    "template": "input_with_helper",
+                    "name": "reco_accounts",
+                    "title": "Reco Accounts",
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "help": "Enter a unique name for the data input",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^[a-zA-Z]\\w*$",
+                                    "errorMsg": "Input Name must start with a letter and followed by alphabetic letters, digits or underscores."
+                                },
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100,
+                                    "errorMsg": "Length of input name should be between 1 and 100"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "text",
+                            "field": "interval",
+                            "label": "Interval",
+                            "defaultValue": "43200",
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Interval must be either a non-negative number or -1.",
+                                    "pattern": "^(?:-1|\\d+(?:\\.\\d+)?)$"
+                                }
+                            ],
+                            "help": "Time interval of input in seconds.",
+                            "required": true
+                        },
+                        {
+                            "field": "index",
+                            "label": "Index",
+                            "type": "singleSelect",
+                            "defaultValue": "default",
+                            "options": {
+                                "endpointUrl": "data/indexes",
+                                "denyList": "^_.*$",
+                                "createSearchChoice": true
+                            },
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 80,
+                                    "errorMsg": "Length of index name should be between 1 and 80."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "limit",
+                            "label": "Limit",
+                            "help": "",
+                            "required": false,
+                            "type": "text",
+                            "defaultValue": "0",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 8192,
+                                    "errorMsg": "Max length of text input is 8192"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "sourcetype",
+                            "label": "Source type",
+                            "type": "text",
+                            "defaultValue": "recoAccounts",
+                            "required": true,
+                            "options": {
+                                "display": false
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}
