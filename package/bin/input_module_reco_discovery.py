@@ -1,5 +1,4 @@
 import json
-from datetime import datetime
 
 import reco_external_api as reco_api
 
@@ -35,17 +34,21 @@ def collect_events(helper, ew):
     reco_api.log_checkpoint_state(helper, after, LAST_SEEN_FIELD)
 
     all_apps = []
+    latest_seen = None
     succeeded = False
     try:
         all_apps = fetch_all_apps(helper, tenant_url, api_key, page_size, after)
         helper.log_info(f"Total apps fetched: {len(all_apps)}")
         send_events(all_apps, helper, ew)
         succeeded = True
+        latest_seen = reco_api.max_field_datetime(helper, all_apps, LAST_SEEN_FIELD)
     except Exception as e:
         reco_api.log_exception(helper, "Error fetching app discovery data", e)
 
-    if succeeded:
-        reco_api.save_checkpoint(helper, "reco_discovery_last_run", datetime.now())
+    if succeeded and latest_seen:
+        reco_api.save_checkpoint(helper, "reco_discovery_last_run", latest_seen)
+    elif succeeded:
+        helper.log_info("No apps fetched this run -- checkpoint left unchanged")
     else:
         helper.log_info("Error fetching app discovery data this run -- checkpoint left unchanged")
     helper.log_info("=== Finished reco_discovery collection job ===")
