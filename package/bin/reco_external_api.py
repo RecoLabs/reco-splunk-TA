@@ -15,7 +15,7 @@ MAX_PAGE_SIZE = 10000
 # Keep in lockstep with the version in app.manifest / default/app.conf /
 # globalConfig.json / TA-reco.aob_meta -- there is no single source of truth
 # for the TA version, so this must be bumped by hand alongside those.
-TA_VERSION = "2.0.0"
+TA_VERSION = "2.1.1"
 
 
 def build_headers(api_key):
