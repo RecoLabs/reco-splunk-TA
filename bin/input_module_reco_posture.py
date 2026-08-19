@@ -1,5 +1,4 @@
 import json
-from datetime import datetime
 
 import reco_external_api as reco_api
 
@@ -35,17 +34,21 @@ def collect_events(helper, ew):
     reco_api.log_checkpoint_state(helper, after, STATUS_SINCE_FIELD)
 
     issues = []
+    latest_seen = None
     succeeded = False
     try:
         issues = fetch_posture_issues(helper, tenant_url, api_key, max_fetch, status, after)
         helper.log_info(f"Fetched {len(issues)} posture issues.")
         send_events(issues, helper, ew)
         succeeded = True
+        latest_seen = reco_api.max_field_datetime(helper, issues, STATUS_SINCE_FIELD)
     except Exception as e:
         reco_api.log_exception(helper, "Error fetching posture issues", e)
 
-    if succeeded:
-        reco_api.save_checkpoint(helper, "last_run1", datetime.now())
+    if succeeded and latest_seen:
+        reco_api.save_checkpoint(helper, "last_run1", latest_seen)
+    elif succeeded:
+        helper.log_info("No posture issues fetched this run -- checkpoint left unchanged")
     else:
         helper.log_info("Error fetching posture issues this run -- checkpoint left unchanged")
     helper.log_info("=== Finished reco_posture collection job ===")

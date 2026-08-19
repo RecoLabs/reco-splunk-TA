@@ -178,8 +178,48 @@ def log_checkpoint_state(helper, after, field_name):
         helper.log_info(f"No checkpoint found -- performing a full pull on {field_name}")
 
 
-def save_checkpoint(helper, checkpoint_name, now):
-    """Save the checkpoint and log the new value."""
-    new_value = format_checkpoint_time(now)
+def max_field_datetime(helper, items, field_name):
+    """Return the max value of `field_name` across items, parsed as a checkpoint
+    timestamp, or None if no item carries a parseable value.
+
+    Checkpointing on the newest record actually observed -- rather than the
+    poller's own wall-clock time -- is immune to the Heavy Forwarder's host
+    clock/timezone being wrong or skewed relative to the API's UTC timestamps,
+    and it never advances the checkpoint past a moment for which we haven't
+    actually seen the data yet (which a wall-clock checkpoint can do if a slow
+    fetch straddles a record being created).
+    """
+    best = None
+    unparseable = 0
+    for item in items:
+        raw = item.get(field_name)
+        if not raw:
+            continue
+        try:
+            value = parse_checkpoint_time(raw)
+        except ValueError:
+            unparseable += 1
+            continue
+        if best is None or value > best:
+            best = value
+    if unparseable:
+        helper.log_warning(
+            f"{unparseable} item(s) had an unparseable {field_name} value; skipped for checkpointing"
+        )
+    return best
+
+
+def save_checkpoint(helper, checkpoint_name, checkpoint_time):
+    """Save the checkpoint and log the new value.
+
+    `checkpoint_time` should be the max field value actually seen in this
+    run's fetched records (see max_field_datetime) -- not wall-clock time.
+    Wall-clock time only agrees with the API's UTC timestamps if the poller's
+    host clock happens to be set to UTC; when it isn't, the checkpoint sent
+    back as the next poll's `after` filter is off by the host's UTC offset,
+    so already-seen records keep matching the filter and get re-sent on every
+    poll until the (still-wrong) checkpoint happens to catch up.
+    """
+    new_value = format_checkpoint_time(checkpoint_time)
     helper.save_check_point(checkpoint_name, {"lastRun": new_value})
     helper.log_info(f"Checkpoint '{checkpoint_name}' updated to {new_value}")
