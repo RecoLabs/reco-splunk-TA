@@ -11,6 +11,12 @@ import traceback
 
 EXTERNAL_API_BASE = "/api/v1/external-api"
 OCCURRED_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+# Several checkpoint fields come back from the API with sub-second precision
+# (posture's currentStatusSince/updatedAt use microseconds, system_logs'
+# timestamp uses milliseconds) while others don't (accounts/discovery/
+# identities' lastSeen). %f accepts 1-6 digits on parse regardless of which
+# of those it actually is, so this one format covers both.
+OCCURRED_FORMAT_WITH_MICROS = "%Y-%m-%dT%H:%M:%S.%fZ"
 MAX_PAGE_SIZE = 10000
 # Keep in lockstep with the version in app.manifest / default/app.conf /
 # globalConfig.json / TA-reco.aob_meta -- there is no single source of truth
@@ -163,11 +169,27 @@ def get_detail(helper, tenant_url, api_key, resource_path, item_key, timeout=30)
 
 
 def format_checkpoint_time(dt):
+    if dt.microsecond:
+        return dt.strftime(OCCURRED_FORMAT_WITH_MICROS)
     return dt.strftime(OCCURRED_FORMAT)
 
 
 def parse_checkpoint_time(value):
-    return datetime.datetime.strptime(value, OCCURRED_FORMAT) if value else None
+    """Parse a checkpoint/API timestamp, with or without sub-second precision.
+
+    Silently mis-parsing here is what caused the original clock-skew fix to
+    regress into a worse bug on posture/system_logs: their timestamp fields
+    carry sub-second precision that OCCURRED_FORMAT alone can't parse, so
+    every fetched item was being rejected as unparseable, latest_seen was
+    always None, and the checkpoint never advanced at all -- causing
+    unbounded re-sends of the same records, every poll, forever.
+    """
+    if not value:
+        return None
+    try:
+        return datetime.datetime.strptime(value, OCCURRED_FORMAT_WITH_MICROS)
+    except ValueError:
+        return datetime.datetime.strptime(value, OCCURRED_FORMAT)
 
 
 def log_checkpoint_state(helper, after, field_name):
