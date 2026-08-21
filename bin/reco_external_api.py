@@ -17,6 +17,16 @@ OCCURRED_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 # identities' lastSeen). %f accepts 1-6 digits on parse regardless of which
 # of those it actually is, so this one format covers both.
 OCCURRED_FORMAT_WITH_MICROS = "%Y-%m-%dT%H:%M:%S.%fZ"
+# Tried in order in parse_checkpoint_time. The first two cover every format
+# actually observed from the API/stored checkpoints so far; the offset
+# variants are a defensive fallback in case a future field ever comes back
+# as "+00:00" instead of "Z".
+CHECKPOINT_TIME_FORMATS = (
+    OCCURRED_FORMAT_WITH_MICROS,
+    OCCURRED_FORMAT,
+    "%Y-%m-%dT%H:%M:%S.%f%z",
+    "%Y-%m-%dT%H:%M:%S%z",
+)
 MAX_PAGE_SIZE = 10000
 # Keep in lockstep with the version in app.manifest / default/app.conf /
 # globalConfig.json / TA-reco.aob_meta -- there is no single source of truth
@@ -175,21 +185,71 @@ def format_checkpoint_time(dt):
 
 
 def parse_checkpoint_time(value):
-    """Parse a checkpoint/API timestamp, with or without sub-second precision.
+    """Parse a checkpoint/API timestamp, trying each of CHECKPOINT_TIME_FORMATS
+    in turn. Raises ValueError if none of them match.
 
     Silently mis-parsing here is what caused the original clock-skew fix to
     regress into a worse bug on posture/system_logs: their timestamp fields
-    carry sub-second precision that OCCURRED_FORMAT alone can't parse, so
+    carry sub-second precision that OCCURRED_FORMAT alone couldn't parse, so
     every fetched item was being rejected as unparseable, latest_seen was
     always None, and the checkpoint never advanced at all -- causing
     unbounded re-sends of the same records, every poll, forever.
+
+    Deliberately strict (raises rather than guessing a value): used inside
+    max_field_datetime, where an unparseable item should be skipped and
+    logged, not silently assigned some other timestamp that would then
+    compete to become the checkpoint. Callers that need a single checkpoint
+    value no matter what -- i.e. reading the one stored `after` checkpoint at
+    the start of a poll -- should use parse_checkpoint_time_or_now instead.
+
+    Always returns a naive datetime (any parsed UTC offset is folded in and
+    dropped) so every value flowing through this module is directly
+    comparable with `>` -- the offset-style formats in
+    CHECKPOINT_TIME_FORMATS would otherwise come back tz-aware while the
+    "Z"-style ones come back naive, and comparing the two raises TypeError.
+    """
+    if not value:
+        return None
+    for fmt in CHECKPOINT_TIME_FORMATS:
+        try:
+            parsed = datetime.datetime.strptime(value, fmt)
+            break
+        except ValueError:
+            continue
+    else:
+        raise ValueError(f"Could not parse checkpoint time {value!r} against any known format")
+    if parsed.tzinfo is not None:
+        parsed = parsed.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+    return parsed
+
+
+def parse_checkpoint_time_or_now(helper, value):
+    """Like parse_checkpoint_time, but falls back to the current UTC time
+    instead of raising if `value` doesn't match any known format.
+
+    Only meant for reading the single stored checkpoint at the start of a
+    poll: a corrupted/unrecognizable stored value there would otherwise
+    raise uncaught and break every subsequent poll on this input until
+    someone clears the checkpoint by hand. Falling back to "now" instead
+    means this poll's filter becomes `after now`, so nothing already seen
+    gets refetched -- the best available recovery for a checkpoint that can
+    no longer be trusted, at the cost of a one-time gap for anything created
+    between the last good checkpoint and now.
+
+    Deliberately NOT used inside max_field_datetime: skipping an unparseable
+    *item* there is safe (it's one of many, and the rest still produce a
+    real max), but defaulting an item to "now" would make it win that max()
+    every time and reintroduce the wall-clock-checkpoint races this whole
+    fix exists to avoid. Uses UTC explicitly (not naive datetime.now()) so
+    this fallback can't reintroduce the host-timezone bug either.
     """
     if not value:
         return None
     try:
-        return datetime.datetime.strptime(value, OCCURRED_FORMAT_WITH_MICROS)
-    except ValueError:
-        return datetime.datetime.strptime(value, OCCURRED_FORMAT)
+        return parse_checkpoint_time(value)
+    except ValueError as e:
+        helper.log_warning(f"{e} -- falling back to current UTC time for this checkpoint")
+        return datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
 
 
 def log_checkpoint_state(helper, after, field_name):

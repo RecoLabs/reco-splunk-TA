@@ -24,7 +24,7 @@ def collect_events(helper, ew):
     if not tenant_url:
         return
 
-    after = reco_api.parse_checkpoint_time(last_run.get("lastRun"))
+    after = reco_api.parse_checkpoint_time_or_now(helper, last_run.get("lastRun"))
     reco_api.log_checkpoint_state(helper, after, CREATED_AT_FIELD)
 
     alerts = []
