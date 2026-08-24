@@ -305,3 +305,89 @@ def save_checkpoint(helper, checkpoint_name, checkpoint_time):
     new_value = format_checkpoint_time(checkpoint_time)
     helper.save_check_point(checkpoint_name, {"lastRun": new_value})
     helper.log_info(f"Checkpoint '{checkpoint_name}' updated to {new_value}")
+
+
+# --- Boundary-second dedup ---------------------------------------------
+#
+# The External API's Postgres-backed endpoints (currently: alerts/list,
+# posture-issues/list) silently truncate `gt`/`lt` timestamp filters to
+# whole-second precision server-side, instead of honoring the full
+# microsecond value we send. That means `createdAt gt "...213855Z"` is
+# actually applied as `createdAt > ...:55` (no fractional seconds), so
+# every record sharing that same second -- including the exact record that
+# produced the checkpoint -- keeps matching the filter and gets re-sent on
+# every poll until a record with a genuinely later *whole second* appears.
+# This is a server-side bug (Postgres query builder ignores the
+# HighPrecision flag that the ClickHouse-backed endpoints honor); it isn't
+# fixable by sending a different timestamp format, since whatever we send
+# gets truncated the same way. The functions below work around it entirely
+# client-side, for the specific inputs that hit it: remember which record
+# IDs were sent in the checkpoint's current whole-second bucket, and drop
+# them if the server re-returns them, without touching the checkpoint
+# timestamp itself (which stays exact, so this doesn't reintroduce the
+# host-clock-skew bug or a wall-clock race).
+
+def same_whole_second(a, b):
+    """True if two datetimes fall within the same whole second, ignoring
+    sub-second precision -- the granularity the Postgres bug above actually
+    filters at."""
+    return a.replace(microsecond=0) == b.replace(microsecond=0)
+
+
+def ids_in_boundary_second(items, id_field, ts_field, checkpoint_time):
+    """IDs of items whose ts_field falls in the same whole second as
+    checkpoint_time -- the set that must be remembered so a future poll can
+    recognize and drop them if the Postgres gt-filter-truncation bug causes
+    the server to re-return them (see drop_already_sent_in_boundary)."""
+    if checkpoint_time is None:
+        return []
+    ids = []
+    for item in items:
+        raw = item.get(ts_field)
+        if not raw:
+            continue
+        try:
+            value = parse_checkpoint_time(raw)
+        except ValueError:
+            continue
+        if same_whole_second(value, checkpoint_time):
+            item_id = item.get(id_field)
+            if item_id:
+                ids.append(item_id)
+    return ids
+
+
+def drop_already_sent_in_boundary(helper, items, id_field, boundary_ids, label):
+    """Drop items whose id_field is in boundary_ids -- records already sent
+    on a prior poll that the Postgres gt-filter-truncation bug is still
+    re-matching because they share the previous checkpoint's whole second.
+    """
+    if not boundary_ids:
+        return items
+    seen = set(boundary_ids)
+    kept = [i for i in items if i.get(id_field) not in seen]
+    dropped = len(items) - len(kept)
+    if dropped:
+        helper.log_info(
+            f"Dropped {dropped} {label} already sent in this checkpoint's boundary second "
+            f"(Postgres gt-filter truncation workaround)"
+        )
+    return kept
+
+
+def get_boundary_ids(last_run):
+    """Read back the boundary-second IDs saved by save_checkpoint_with_boundary."""
+    return last_run.get("boundaryIds") or []
+
+
+def save_checkpoint_with_boundary(helper, checkpoint_name, checkpoint_time, boundary_ids):
+    """Like save_checkpoint, but also persists the record IDs seen in the
+    same whole second as checkpoint_time, for drop_already_sent_in_boundary
+    to use on the next poll. Only needed for inputs affected by the
+    Postgres gt-filter-truncation bug described above.
+    """
+    new_value = format_checkpoint_time(checkpoint_time)
+    helper.save_check_point(checkpoint_name, {"lastRun": new_value, "boundaryIds": boundary_ids})
+    helper.log_info(
+        f"Checkpoint '{checkpoint_name}' updated to {new_value} ({len(boundary_ids)} boundary id(s) tracked)"
+    )

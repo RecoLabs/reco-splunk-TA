@@ -31,22 +31,29 @@ def collect_events(helper, ew):
         return
 
     after = reco_api.parse_checkpoint_time_or_now(helper, last_run.get("lastRun"))
+    boundary_ids = reco_api.get_boundary_ids(last_run)
     reco_api.log_checkpoint_state(helper, after, STATUS_SINCE_FIELD)
 
     issues = []
     latest_seen = None
+    new_boundary_ids = []
     succeeded = False
     try:
         issues = fetch_posture_issues(helper, tenant_url, api_key, max_fetch, status, after)
         helper.log_info(f"Fetched {len(issues)} posture issues.")
+        # Computed from the full fetch, before dropping already-sent ones
+        # below -- new_boundary_ids must keep tracking every id at the tip
+        # second regardless of whether this run resent it.
+        latest_seen = reco_api.max_field_datetime(helper, issues, STATUS_SINCE_FIELD)
+        new_boundary_ids = reco_api.ids_in_boundary_second(issues, "id", STATUS_SINCE_FIELD, latest_seen)
+        issues = reco_api.drop_already_sent_in_boundary(helper, issues, "id", boundary_ids, "posture issue(s)")
         send_events(issues, helper, ew)
         succeeded = True
-        latest_seen = reco_api.max_field_datetime(helper, issues, STATUS_SINCE_FIELD)
     except Exception as e:
         reco_api.log_exception(helper, "Error fetching posture issues", e)
 
     if succeeded and latest_seen:
-        reco_api.save_checkpoint(helper, "last_run1", latest_seen)
+        reco_api.save_checkpoint_with_boundary(helper, "last_run1", latest_seen, new_boundary_ids)
     elif succeeded:
         helper.log_info("No posture issues fetched this run -- checkpoint left unchanged")
     else:
