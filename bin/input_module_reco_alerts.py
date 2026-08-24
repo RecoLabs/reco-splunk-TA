@@ -25,16 +25,13 @@ def collect_events(helper, ew):
         return
 
     after = reco_api.parse_checkpoint_time_or_now(helper, last_run.get("lastRun"))
-    boundary_ids = reco_api.get_boundary_ids(last_run)
     reco_api.log_checkpoint_state(helper, after, CREATED_AT_FIELD)
 
     alerts = []
     latest_seen = None
-    new_boundary_ids = []
     succeeded = False
     try:
-        alerts, latest_seen, new_boundary_ids = fetch_reco_alerts(
-            helper, tenant_url, api_key, max_fetch, status, after, boundary_ids)
+        alerts, latest_seen = fetch_reco_alerts(helper, tenant_url, api_key, max_fetch, status, after)
         helper.log_info(f"Fetched {len(alerts)} alerts.")
         send_events(alerts, helper, ew)
         succeeded = True
@@ -42,7 +39,7 @@ def collect_events(helper, ew):
         reco_api.log_exception(helper, "Error fetching alerts", e)
 
     if succeeded and latest_seen:
-        reco_api.save_checkpoint_with_boundary(helper, "last_run", latest_seen, new_boundary_ids)
+        reco_api.save_checkpoint(helper, "last_run", latest_seen)
     elif succeeded:
         helper.log_info("No alerts fetched this run -- checkpoint left unchanged")
     else:
@@ -50,23 +47,22 @@ def collect_events(helper, ew):
     helper.log_info("=== Finished reco_alerts collection job ===")
 
 
-def fetch_reco_alerts(helper, tenant_url, api_key, max_fetch, status, after, boundary_ids):
+def fetch_reco_alerts(helper, tenant_url, api_key, max_fetch, status, after):
     """Retrieve alert stubs then fetch full detail (incl. policy violations) for each.
 
-    Returns (detailed_alerts, latest_seen, new_boundary_ids). latest_seen is
-    the max CREATED_AT_FIELD across the fetched stubs, for checkpointing.
-    new_boundary_ids is computed from the *full* fetched stub list (before
-    dropping already-sent ones below) since it must keep tracking every id
-    at the tip second regardless of whether this run resent it.
+    Returns (detailed_alerts, latest_seen) where latest_seen is the max
+    CREATED_AT_FIELD across the fetched stubs, for checkpointing.
     """
     filters = build_filters(status, after)
     stubs = reco_api.fetch_all(helper, tenant_url, api_key, RESOURCE_PATH, ITEMS_KEY,
                                 page_size=max_fetch, filters=filters,
                                 sort_by=CREATED_AT_FIELD, sort_order="ascending")
+    # Postgres backend bug: `createdAt gt after` gets truncated to whole-second
+    # precision server-side, so records at or before `after` (including the
+    # one that produced it) keep matching and get re-returned every poll.
+    # Re-apply the exact comparison the filter should have enforced.
+    stubs = reco_api.drop_at_or_before(helper, stubs, CREATED_AT_FIELD, after, "alert(s)")
     latest_seen = reco_api.max_field_datetime(helper, stubs, CREATED_AT_FIELD)
-    new_boundary_ids = reco_api.ids_in_boundary_second(stubs, "id", CREATED_AT_FIELD, latest_seen)
-
-    stubs = reco_api.drop_already_sent_in_boundary(helper, stubs, "id", boundary_ids, "alert(s)")
 
     detailed_alerts = []
     helper.log_info("Fetching detailed information for each alert.")
@@ -82,7 +78,7 @@ def fetch_reco_alerts(helper, tenant_url, api_key, max_fetch, status, after, bou
             detailed_alerts.append(detail)
             helper.log_info(f"Fetched detailed data for alert ID: {alert_id}")
 
-    return detailed_alerts, latest_seen, new_boundary_ids
+    return detailed_alerts, latest_seen
 
 
 def get_single_alert(helper, tenant_url, api_key, alert_id):

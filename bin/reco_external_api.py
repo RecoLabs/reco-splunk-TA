@@ -307,87 +307,47 @@ def save_checkpoint(helper, checkpoint_name, checkpoint_time):
     helper.log_info(f"Checkpoint '{checkpoint_name}' updated to {new_value}")
 
 
-# --- Boundary-second dedup ---------------------------------------------
-#
-# The External API's Postgres-backed endpoints (currently: alerts/list,
-# posture-issues/list) silently truncate `gt`/`lt` timestamp filters to
-# whole-second precision server-side, instead of honoring the full
-# microsecond value we send. That means `createdAt gt "...213855Z"` is
-# actually applied as `createdAt > ...:55` (no fractional seconds), so
-# every record sharing that same second -- including the exact record that
-# produced the checkpoint -- keeps matching the filter and gets re-sent on
-# every poll until a record with a genuinely later *whole second* appears.
-# This is a server-side bug (Postgres query builder ignores the
-# HighPrecision flag that the ClickHouse-backed endpoints honor); it isn't
-# fixable by sending a different timestamp format, since whatever we send
-# gets truncated the same way. The functions below work around it entirely
-# client-side, for the specific inputs that hit it: remember which record
-# IDs were sent in the checkpoint's current whole-second bucket, and drop
-# them if the server re-returns them, without touching the checkpoint
-# timestamp itself (which stays exact, so this doesn't reintroduce the
-# host-clock-skew bug or a wall-clock race).
+def drop_at_or_before(helper, items, ts_field, after, label):
+    """Drop items whose ts_field is <= `after`, re-applying client-side the
+    exact `gt` comparison the filter already asked the server for.
 
-def same_whole_second(a, b):
-    """True if two datetimes fall within the same whole second, ignoring
-    sub-second precision -- the granularity the Postgres bug above actually
-    filters at."""
-    return a.replace(microsecond=0) == b.replace(microsecond=0)
+    Works around a Postgres backend bug (alerts/list, posture-issues/list)
+    where `gt`/`lt` timestamp filters are silently truncated to whole-second
+    precision server-side, so records at or before the real boundary --
+    including the one that produced the boundary itself -- keep matching
+    the filter and get re-returned on every poll. This isn't a new
+    correctness rule: it's exactly what a correctly-applied server-side
+    `gt` filter would already have done, so it needs no extra state and
+    introduces no new failure mode beyond what a working filter would have.
 
-
-def ids_in_boundary_second(items, id_field, ts_field, checkpoint_time):
-    """IDs of items whose ts_field falls in the same whole second as
-    checkpoint_time -- the set that must be remembered so a future poll can
-    recognize and drop them if the Postgres gt-filter-truncation bug causes
-    the server to re-return them (see drop_already_sent_in_boundary)."""
-    if checkpoint_time is None:
-        return []
-    ids = []
+    Items with an unparseable ts_field are kept (and logged) rather than
+    silently dropped -- we can't safely judge them either way.
+    """
+    if after is None:
+        return items
+    kept = []
+    dropped = 0
+    unparseable = 0
     for item in items:
         raw = item.get(ts_field)
         if not raw:
+            kept.append(item)
             continue
         try:
             value = parse_checkpoint_time(raw)
         except ValueError:
+            unparseable += 1
+            kept.append(item)
             continue
-        if same_whole_second(value, checkpoint_time):
-            item_id = item.get(id_field)
-            if item_id:
-                ids.append(item_id)
-    return ids
-
-
-def drop_already_sent_in_boundary(helper, items, id_field, boundary_ids, label):
-    """Drop items whose id_field is in boundary_ids -- records already sent
-    on a prior poll that the Postgres gt-filter-truncation bug is still
-    re-matching because they share the previous checkpoint's whole second.
-    """
-    if not boundary_ids:
-        return items
-    seen = set(boundary_ids)
-    kept = [i for i in items if i.get(id_field) not in seen]
-    dropped = len(items) - len(kept)
+        if value <= after:
+            dropped += 1
+            continue
+        kept.append(item)
     if dropped:
         helper.log_info(
-            f"Dropped {dropped} {label} already sent in this checkpoint's boundary second "
+            f"Dropped {dropped} {label} at or before the checkpoint boundary "
             f"(Postgres gt-filter truncation workaround)"
         )
+    if unparseable:
+        helper.log_warning(f"{unparseable} {label} had an unparseable {ts_field}; kept without filtering")
     return kept
-
-
-def get_boundary_ids(last_run):
-    """Read back the boundary-second IDs saved by save_checkpoint_with_boundary."""
-    return last_run.get("boundaryIds") or []
-
-
-def save_checkpoint_with_boundary(helper, checkpoint_name, checkpoint_time, boundary_ids):
-    """Like save_checkpoint, but also persists the record IDs seen in the
-    same whole second as checkpoint_time, for drop_already_sent_in_boundary
-    to use on the next poll. Only needed for inputs affected by the
-    Postgres gt-filter-truncation bug described above.
-    """
-    new_value = format_checkpoint_time(checkpoint_time)
-    helper.save_check_point(checkpoint_name, {"lastRun": new_value, "boundaryIds": boundary_ids})
-    helper.log_info(
-        f"Checkpoint '{checkpoint_name}' updated to {new_value} ({len(boundary_ids)} boundary id(s) tracked)"
-    )
