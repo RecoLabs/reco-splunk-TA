@@ -1,5 +1,4 @@
 import json
-from datetime import datetime
 
 import reco_external_api as reco_api
 
@@ -25,32 +24,45 @@ def collect_events(helper, ew):
     if not tenant_url:
         return
 
-    after = reco_api.parse_checkpoint_time(last_run.get("lastRun"))
+    after = reco_api.parse_checkpoint_time_or_now(helper, last_run.get("lastRun"))
     reco_api.log_checkpoint_state(helper, after, CREATED_AT_FIELD)
 
     alerts = []
+    latest_seen = None
     succeeded = False
     try:
-        alerts = fetch_reco_alerts(helper, tenant_url, api_key, max_fetch, status, after)
+        alerts, latest_seen = fetch_reco_alerts(helper, tenant_url, api_key, max_fetch, status, after)
         helper.log_info(f"Fetched {len(alerts)} alerts.")
         send_events(alerts, helper, ew)
         succeeded = True
     except Exception as e:
         reco_api.log_exception(helper, "Error fetching alerts", e)
 
-    if succeeded:
-        reco_api.save_checkpoint(helper, "last_run", datetime.now())
+    if succeeded and latest_seen:
+        reco_api.save_checkpoint(helper, "last_run", latest_seen)
+    elif succeeded:
+        helper.log_info("No alerts fetched this run -- checkpoint left unchanged")
     else:
         helper.log_info("Error fetching alerts this run -- checkpoint left unchanged")
     helper.log_info("=== Finished reco_alerts collection job ===")
 
 
 def fetch_reco_alerts(helper, tenant_url, api_key, max_fetch, status, after):
-    """Retrieve alert stubs then fetch full detail (incl. policy violations) for each."""
+    """Retrieve alert stubs then fetch full detail (incl. policy violations) for each.
+
+    Returns (detailed_alerts, latest_seen) where latest_seen is the max
+    CREATED_AT_FIELD across the fetched stubs, for checkpointing.
+    """
     filters = build_filters(status, after)
     stubs = reco_api.fetch_all(helper, tenant_url, api_key, RESOURCE_PATH, ITEMS_KEY,
                                 page_size=max_fetch, filters=filters,
                                 sort_by=CREATED_AT_FIELD, sort_order="ascending")
+    # Postgres backend bug: `createdAt gt after` gets truncated to whole-second
+    # precision server-side, so records at or before `after` (including the
+    # one that produced it) keep matching and get re-returned every poll.
+    # Re-apply the exact comparison the filter should have enforced.
+    stubs = reco_api.drop_at_or_before(helper, stubs, CREATED_AT_FIELD, after, "alert(s)")
+    latest_seen = reco_api.max_field_datetime(helper, stubs, CREATED_AT_FIELD)
 
     detailed_alerts = []
     helper.log_info("Fetching detailed information for each alert.")
@@ -66,7 +78,7 @@ def fetch_reco_alerts(helper, tenant_url, api_key, max_fetch, status, after):
             detailed_alerts.append(detail)
             helper.log_info(f"Fetched detailed data for alert ID: {alert_id}")
 
-    return detailed_alerts
+    return detailed_alerts, latest_seen
 
 
 def get_single_alert(helper, tenant_url, api_key, alert_id):

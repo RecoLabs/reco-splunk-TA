@@ -11,11 +11,27 @@ import traceback
 
 EXTERNAL_API_BASE = "/api/v1/external-api"
 OCCURRED_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+# Several checkpoint fields come back from the API with sub-second precision
+# (posture's currentStatusSince/updatedAt use microseconds, system_logs'
+# timestamp uses milliseconds) while others don't (accounts/discovery/
+# identities' lastSeen). %f accepts 1-6 digits on parse regardless of which
+# of those it actually is, so this one format covers both.
+OCCURRED_FORMAT_WITH_MICROS = "%Y-%m-%dT%H:%M:%S.%fZ"
+# Tried in order in parse_checkpoint_time. The first two cover every format
+# actually observed from the API/stored checkpoints so far; the offset
+# variants are a defensive fallback in case a future field ever comes back
+# as "+00:00" instead of "Z".
+CHECKPOINT_TIME_FORMATS = (
+    OCCURRED_FORMAT_WITH_MICROS,
+    OCCURRED_FORMAT,
+    "%Y-%m-%dT%H:%M:%S.%f%z",
+    "%Y-%m-%dT%H:%M:%S%z",
+)
 MAX_PAGE_SIZE = 10000
 # Keep in lockstep with the version in app.manifest / default/app.conf /
 # globalConfig.json / TA-reco.aob_meta -- there is no single source of truth
 # for the TA version, so this must be bumped by hand alongside those.
-TA_VERSION = "2.0.0"
+TA_VERSION = "2.1.1"
 
 
 def build_headers(api_key):
@@ -163,11 +179,77 @@ def get_detail(helper, tenant_url, api_key, resource_path, item_key, timeout=30)
 
 
 def format_checkpoint_time(dt):
+    if dt.microsecond:
+        return dt.strftime(OCCURRED_FORMAT_WITH_MICROS)
     return dt.strftime(OCCURRED_FORMAT)
 
 
 def parse_checkpoint_time(value):
-    return datetime.datetime.strptime(value, OCCURRED_FORMAT) if value else None
+    """Parse a checkpoint/API timestamp, trying each of CHECKPOINT_TIME_FORMATS
+    in turn. Raises ValueError if none of them match.
+
+    Silently mis-parsing here is what caused the original clock-skew fix to
+    regress into a worse bug on posture/system_logs: their timestamp fields
+    carry sub-second precision that OCCURRED_FORMAT alone couldn't parse, so
+    every fetched item was being rejected as unparseable, latest_seen was
+    always None, and the checkpoint never advanced at all -- causing
+    unbounded re-sends of the same records, every poll, forever.
+
+    Deliberately strict (raises rather than guessing a value): used inside
+    max_field_datetime, where an unparseable item should be skipped and
+    logged, not silently assigned some other timestamp that would then
+    compete to become the checkpoint. Callers that need a single checkpoint
+    value no matter what -- i.e. reading the one stored `after` checkpoint at
+    the start of a poll -- should use parse_checkpoint_time_or_now instead.
+
+    Always returns a naive datetime (any parsed UTC offset is folded in and
+    dropped) so every value flowing through this module is directly
+    comparable with `>` -- the offset-style formats in
+    CHECKPOINT_TIME_FORMATS would otherwise come back tz-aware while the
+    "Z"-style ones come back naive, and comparing the two raises TypeError.
+    """
+    if not value:
+        return None
+    for fmt in CHECKPOINT_TIME_FORMATS:
+        try:
+            parsed = datetime.datetime.strptime(value, fmt)
+            break
+        except ValueError:
+            continue
+    else:
+        raise ValueError(f"Could not parse checkpoint time {value!r} against any known format")
+    if parsed.tzinfo is not None:
+        parsed = parsed.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+    return parsed
+
+
+def parse_checkpoint_time_or_now(helper, value):
+    """Like parse_checkpoint_time, but falls back to the current UTC time
+    instead of raising if `value` doesn't match any known format.
+
+    Only meant for reading the single stored checkpoint at the start of a
+    poll: a corrupted/unrecognizable stored value there would otherwise
+    raise uncaught and break every subsequent poll on this input until
+    someone clears the checkpoint by hand. Falling back to "now" instead
+    means this poll's filter becomes `after now`, so nothing already seen
+    gets refetched -- the best available recovery for a checkpoint that can
+    no longer be trusted, at the cost of a one-time gap for anything created
+    between the last good checkpoint and now.
+
+    Deliberately NOT used inside max_field_datetime: skipping an unparseable
+    *item* there is safe (it's one of many, and the rest still produce a
+    real max), but defaulting an item to "now" would make it win that max()
+    every time and reintroduce the wall-clock-checkpoint races this whole
+    fix exists to avoid. Uses UTC explicitly (not naive datetime.now()) so
+    this fallback can't reintroduce the host-timezone bug either.
+    """
+    if not value:
+        return None
+    try:
+        return parse_checkpoint_time(value)
+    except ValueError as e:
+        helper.log_warning(f"{e} -- falling back to current UTC time for this checkpoint")
+        return datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
 
 
 def log_checkpoint_state(helper, after, field_name):
@@ -178,8 +260,94 @@ def log_checkpoint_state(helper, after, field_name):
         helper.log_info(f"No checkpoint found -- performing a full pull on {field_name}")
 
 
-def save_checkpoint(helper, checkpoint_name, now):
-    """Save the checkpoint and log the new value."""
-    new_value = format_checkpoint_time(now)
+def max_field_datetime(helper, items, field_name):
+    """Return the max value of `field_name` across items, parsed as a checkpoint
+    timestamp, or None if no item carries a parseable value.
+
+    Checkpointing on the newest record actually observed -- rather than the
+    poller's own wall-clock time -- is immune to the Heavy Forwarder's host
+    clock/timezone being wrong or skewed relative to the API's UTC timestamps,
+    and it never advances the checkpoint past a moment for which we haven't
+    actually seen the data yet (which a wall-clock checkpoint can do if a slow
+    fetch straddles a record being created).
+    """
+    best = None
+    unparseable = 0
+    for item in items:
+        raw = item.get(field_name)
+        if not raw:
+            continue
+        try:
+            value = parse_checkpoint_time(raw)
+        except ValueError:
+            unparseable += 1
+            continue
+        if best is None or value > best:
+            best = value
+    if unparseable:
+        helper.log_warning(
+            f"{unparseable} item(s) had an unparseable {field_name} value; skipped for checkpointing"
+        )
+    return best
+
+
+def save_checkpoint(helper, checkpoint_name, checkpoint_time):
+    """Save the checkpoint and log the new value.
+
+    `checkpoint_time` should be the max field value actually seen in this
+    run's fetched records (see max_field_datetime) -- not wall-clock time.
+    Wall-clock time only agrees with the API's UTC timestamps if the poller's
+    host clock happens to be set to UTC; when it isn't, the checkpoint sent
+    back as the next poll's `after` filter is off by the host's UTC offset,
+    so already-seen records keep matching the filter and get re-sent on every
+    poll until the (still-wrong) checkpoint happens to catch up.
+    """
+    new_value = format_checkpoint_time(checkpoint_time)
     helper.save_check_point(checkpoint_name, {"lastRun": new_value})
     helper.log_info(f"Checkpoint '{checkpoint_name}' updated to {new_value}")
+
+
+def drop_at_or_before(helper, items, ts_field, after, label):
+    """Drop items whose ts_field is <= `after`, re-applying client-side the
+    exact `gt` comparison the filter already asked the server for.
+
+    Works around a Postgres backend bug (alerts/list, posture-issues/list)
+    where `gt`/`lt` timestamp filters are silently truncated to whole-second
+    precision server-side, so records at or before the real boundary --
+    including the one that produced the boundary itself -- keep matching
+    the filter and get re-returned on every poll. This isn't a new
+    correctness rule: it's exactly what a correctly-applied server-side
+    `gt` filter would already have done, so it needs no extra state and
+    introduces no new failure mode beyond what a working filter would have.
+
+    Items with an unparseable ts_field are kept (and logged) rather than
+    silently dropped -- we can't safely judge them either way.
+    """
+    if after is None:
+        return items
+    kept = []
+    dropped = 0
+    unparseable = 0
+    for item in items:
+        raw = item.get(ts_field)
+        if not raw:
+            kept.append(item)
+            continue
+        try:
+            value = parse_checkpoint_time(raw)
+        except ValueError:
+            unparseable += 1
+            kept.append(item)
+            continue
+        if value <= after:
+            dropped += 1
+            continue
+        kept.append(item)
+    if dropped:
+        helper.log_info(
+            f"Dropped {dropped} {label} at or before the checkpoint boundary "
+            f"(Postgres gt-filter truncation workaround)"
+        )
+    if unparseable:
+        helper.log_warning(f"{unparseable} {label} had an unparseable {ts_field}; kept without filtering")
+    return kept

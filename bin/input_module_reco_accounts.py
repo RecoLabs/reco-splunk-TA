@@ -1,5 +1,4 @@
 import json
-from datetime import datetime
 
 import reco_external_api as reco_api
 
@@ -31,21 +30,25 @@ def collect_events(helper, ew):
     if not tenant_url:
         return
 
-    after = reco_api.parse_checkpoint_time(last_run.get("lastRun"))
+    after = reco_api.parse_checkpoint_time_or_now(helper, last_run.get("lastRun"))
     reco_api.log_checkpoint_state(helper, after, LAST_SEEN_FIELD)
 
     all_accounts = []
+    latest_seen = None
     succeeded = False
     try:
         all_accounts = fetch_all_accounts(helper, tenant_url, api_key, page_size, after)
         helper.log_info(f"Total accounts fetched: {len(all_accounts)}")
         send_events(all_accounts, helper, ew)
         succeeded = True
+        latest_seen = reco_api.max_field_datetime(helper, all_accounts, LAST_SEEN_FIELD)
     except Exception as e:
         reco_api.log_exception(helper, "Error fetching accounts", e)
 
-    if succeeded:
-        reco_api.save_checkpoint(helper, "reco_accounts_last_run", datetime.now())
+    if succeeded and latest_seen:
+        reco_api.save_checkpoint(helper, "reco_accounts_last_run", latest_seen)
+    elif succeeded:
+        helper.log_info("No accounts fetched this run -- checkpoint left unchanged")
     else:
         helper.log_info("Error fetching accounts this run -- checkpoint left unchanged")
     helper.log_info("=== Finished reco_accounts collection job ===")
